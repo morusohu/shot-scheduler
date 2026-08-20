@@ -154,6 +154,7 @@ textarea{min-height:76px;resize:vertical}
 .timeline-row-top{display:grid;grid-template-columns:96px 1fr 34px;gap:6px;align-items:center;margin-bottom:6px}
 .timeline-row input{margin:0;padding:9px 8px}
 .timeline-row .tl-content{width:100%}
+.timeline-row .tl-type{width:100%;margin-bottom:6px;color:#9a3412;font-weight:700}
 .remove-step{padding:9px 0;background:#fee2e2;color:#b91c1c;border-radius:8px;border:0;min-height:auto}
 .add-step{margin-top:8px;width:100%;background:#ffedd5;color:#9a3412;border:1px dashed #fb923c;border-radius:10px}
 
@@ -389,7 +390,7 @@ textarea{min-height:76px;resize:vertical}
         <label>日別の詳細撮影スケジュール</label>
         <div id="timelineEditor" class="timeline-editor"></div>
         <button type="button" class="add-step" id="addTimelineBtn">＋ 時間と撮影内容を追加</button>
-        <div class="hint">例：09:00 スタジオA 集合・機材準備 ／ 10:30 公園 外観撮影 ／ 13:00 オフィスビル インタビュー撮影　※場所が変わらない工程は空欄でOK</div>
+        <div class="hint">場所・目的は任意です。例：09:00 スタジオA／メイン動画／集合・機材準備 ／ 10:30 公園／本人なし風景Bロール／外観撮影</div>
       </div>
 
       <div class="form-section">
@@ -461,8 +462,9 @@ function fmtDateJp(ds){if(!ds)return '';const d=new Date(ds+'T00:00:00');const w
 function badge(s){return ({'調整中':'b-adjust','確定':'b-fixed','撮影済':'b-shot','編集中':'b-edit','完了':'b-done'})[s]||'b-done'}
 function chips(s){const a=splitNames(s);return a.length?`<div class="chips">${a.map(n=>`<span class="chip">${esc(n)}</span>`).join('')}</div>`:''}
 function mapHref(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place)}
-function timelineRows(){return [...document.querySelectorAll('#timelineEditor .timeline-row')].map(r=>({time:r.querySelector('.tl-time').value,location:r.querySelector('.tl-location').value.trim(),content:r.querySelector('.tl-content').value.trim()})).filter(v=>v.time||v.location||v.content)}
-function addTimelineRow(step={}){const row=document.createElement('div');row.className='timeline-row';row.innerHTML=`<div class="timeline-row-top"><input type="time" class="tl-time" step="900" value="${esc(step.time||'')}"><input class="tl-location" placeholder="場所（例：スタジオA）" value="${esc(step.location||'')}"><button type="button" class="remove-step" title="削除">×</button></div><input class="tl-content" placeholder="撮影内容" value="${esc(step.content||'')}">`;row.querySelector('.remove-step').onclick=()=>{row.remove();if(!document.querySelector('#timelineEditor .timeline-row'))addTimelineRow()};$('timelineEditor').appendChild(row)}
+const SHOOT_TYPES=['メイン動画','本人ありBロール（エキストラ込み）','本人なし風景Bロール'];
+function timelineRows(){return [...document.querySelectorAll('#timelineEditor .timeline-row')].map(r=>({time:r.querySelector('.tl-time').value,location:r.querySelector('.tl-location').value.trim(),type:r.querySelector('.tl-type').value,content:r.querySelector('.tl-content').value.trim()})).filter(v=>v.time||v.location||v.type||v.content)}
+function addTimelineRow(step={}){const row=document.createElement('div');row.className='timeline-row';row.innerHTML=`<div class="timeline-row-top"><input type="time" class="tl-time" step="900" value="${esc(step.time||'')}"><input class="tl-location" placeholder="場所（例：スタジオA）" value="${esc(step.location||'')}"><button type="button" class="remove-step" title="削除">×</button></div><select class="tl-type"><option value="">目的（任意）</option>${SHOOT_TYPES.map(t=>`<option value="${esc(t)}" ${step.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select><input class="tl-content" placeholder="撮影内容" value="${esc(step.content||'')}">`;row.querySelector('.remove-step').onclick=()=>{row.remove();if(!document.querySelector('#timelineEditor .timeline-row'))addTimelineRow()};$('timelineEditor').appendChild(row)}
 function setTimeline(steps=[]){$('timelineEditor').innerHTML='';(steps.length?steps:[{}]).forEach(addTimelineRow)}
 async function saveItem(data){const exists=items.some(x=>x.id===data.id);const url=exists?API+'?id=eq.'+encodeURIComponent(data.id):API;const r=await fetch(url,{method:exists?'PATCH':'POST',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(toDb(data))});if(!r.ok)throw new Error(await r.text());await loadItems()}
 async function deleteItem(id){const r=await fetch(API+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:HEADERS});if(!r.ok)throw new Error(await r.text());await loadItems()}
@@ -591,7 +593,7 @@ function renderDaily(){
  $('dailyEmpty').style.display=dayItems.length?'none':'block';
  $('dailySchedule').innerHTML=dayItems.map(x=>{
    const steps=(x.timeline||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 格納先を開く</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px">📍 ${esc(st.location)}</div>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
+   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 格納先を開く</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px">📍 ${esc(st.location)}</div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
  }).join('');
 }
 
