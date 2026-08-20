@@ -135,20 +135,25 @@ textarea{min-height:76px;resize:vertical}
 .picker-chips:empty{margin-bottom:0}
 .picker-chip{display:inline-flex;align-items:center;gap:6px;background:#ffedd5;color:#9a3412;border-radius:999px;padding:5px 6px 5px 12px;font-size:13px;font-weight:700}
 .picker-chip button{width:18px;height:18px;border-radius:50%;border:0;background:#fed7aa;color:#9a3412;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;min-height:auto;padding:0;line-height:1}
-#subjectInput,#subjectPicker input{border:0;padding:8px 4px;width:100%}
-#subjectInput:focus{box-shadow:none}
+#subjectInput,#subjectPicker input,#participantsInput,#participantsPicker input{border:0;padding:8px 4px;width:100%}
+#subjectInput:focus,#participantsInput:focus{box-shadow:none}
 .suggest-list{margin-top:2px}
 .suggest-item{display:flex;align-items:center;justify-content:space-between;padding:10px 10px;border-radius:8px;font-size:14px}
 .suggest-item:active{background:#fff7ed}
 .suggest-item.addnew{color:var(--accent-dark);font-weight:800}
 .suggest-item .tag{font-size:10px;color:var(--muted);font-weight:700}
 .suggest-empty{padding:10px;font-size:12px;color:var(--muted);line-height:1.5}
+.autocomplete{position:relative}
+.autocomplete .suggest-list{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #fdba74;border-radius:10px;box-shadow:var(--shadow);z-index:5;overflow:hidden;max-height:220px;overflow-y:auto}
+.autocomplete .suggest-list:empty{border:0;box-shadow:none}
 
 /* ---------- timeline editor ---------- */
 .timeline-editor{border:1px solid #fed7aa;border-radius:12px;padding:10px;background:#fffaf5}
-.timeline-row{display:grid;grid-template-columns:96px 1fr 40px;gap:6px;align-items:center;margin-bottom:7px}
+.timeline-row{border:1px solid #fed7aa;border-radius:10px;padding:8px;margin-bottom:8px;background:#fff}
 .timeline-row:last-child{margin-bottom:0}
+.timeline-row-top{display:grid;grid-template-columns:96px 1fr 34px;gap:6px;align-items:center;margin-bottom:6px}
 .timeline-row input{margin:0;padding:9px 8px}
+.timeline-row .tl-content{width:100%}
 .remove-step{padding:9px 0;background:#fee2e2;color:#b91c1c;border-radius:8px;border:0;min-height:auto}
 .add-step{margin-top:8px;width:100%;background:#ffedd5;color:#9a3412;border:1px dashed #fb923c;border-radius:10px}
 
@@ -322,7 +327,7 @@ textarea{min-height:76px;resize:vertical}
       <div class="form-section">
         <div class="form-section-title">📋 基本情報</div>
         <div class="row"><div><label>撮影日 *</label><input type="date" id="date" required></div><div><label>時間</label><input type="time" id="time" step="900"></div></div>
-        <label>案件名 *</label><input id="project" placeholder="例：採用サイト撮影" required>
+        <label>案件名 *</label><input id="project" placeholder="例：候補者撮影" required>
         <label>ステータス</label><select id="status"><option>調整中</option><option>確定</option><option>撮影済</option><option>編集中</option><option>完了</option></select>
       </div>
 
@@ -336,15 +341,37 @@ textarea{min-height:76px;resize:vertical}
           <div class="suggest-list" id="subjectSuggest"></div>
         </div>
         <div class="hint">候補をタップして追加。新しい人はそのまま入力してEnter（またはリストの「追加」）で登録できます</div>
-        <label>撮影参加者</label><input id="participants" placeholder="例：山田, 鈴木, 佐藤"><div class="hint">カメラ担当・補助・立会いなど、複数人を登録できます</div>
-        <div class="row"><div><label>主担当</label><input id="owner" placeholder="例：山田"></div><div><label>編集担当者</label><input id="editor" placeholder="例：鈴木"></div></div>
+        <label>撮影参加者</label>
+        <input type="hidden" id="participants">
+        <div class="picker" id="participantsPicker">
+          <div class="picker-chips" id="participantsChips"></div>
+          <input type="text" id="participantsInput" placeholder="名前を入力、または候補から選択" autocomplete="off">
+          <div class="suggest-list" id="participantsSuggest"></div>
+        </div>
+        <div class="hint">カメラ担当・補助・立会いなど、複数人を候補から選べます。新しい人はそのまま入力してEnter</div>
+        <div class="row">
+          <div>
+            <label>主担当</label>
+            <div class="autocomplete" id="ownerWrap">
+              <input id="owner" placeholder="例：山田" autocomplete="off">
+              <div class="suggest-list" id="ownerSuggest"></div>
+            </div>
+          </div>
+          <div>
+            <label>編集担当者</label>
+            <div class="autocomplete" id="editorWrap">
+              <input id="editor" placeholder="例：鈴木" autocomplete="off">
+              <div class="suggest-list" id="editorSuggest"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="form-section">
         <div class="form-section-title">📍 場所</div>
-        <label>撮影場所</label><input id="location" placeholder="例：市場内・会議室">
+        <label>撮影場所</label><input id="location" placeholder="例：公園・駅">
         <label>集合場所</label>
-        <input type="text" id="meetingPlace" placeholder="例：正面入口・1階ロビー">
+        <input type="text" id="meetingPlace" placeholder="例：駐車場">
         <div class="map-actions">
           <button type="button" class="btn ghost" id="openMeetingMapBtn">🗺️ 地図を見る</button>
           <button type="button" class="btn ghost" id="routeMeetingMapBtn">🚗 現在地からルート</button>
@@ -362,7 +389,7 @@ textarea{min-height:76px;resize:vertical}
         <label>日別の詳細撮影スケジュール</label>
         <div id="timelineEditor" class="timeline-editor"></div>
         <button type="button" class="add-step" id="addTimelineBtn">＋ 時間と撮影内容を追加</button>
-        <div class="hint">例：09:00 集合・機材準備 ／ 09:30 インタビュー撮影 ／ 10:15 作業風景</div>
+        <div class="hint">例：09:00 スタジオA 集合・機材準備 ／ 10:30 公園 外観撮影 ／ 13:00 オフィスビル インタビュー撮影　※場所が変わらない工程は空欄でOK</div>
       </div>
 
       <div class="form-section">
@@ -434,8 +461,8 @@ function fmtDateJp(ds){if(!ds)return '';const d=new Date(ds+'T00:00:00');const w
 function badge(s){return ({'調整中':'b-adjust','確定':'b-fixed','撮影済':'b-shot','編集中':'b-edit','完了':'b-done'})[s]||'b-done'}
 function chips(s){const a=splitNames(s);return a.length?`<div class="chips">${a.map(n=>`<span class="chip">${esc(n)}</span>`).join('')}</div>`:''}
 function mapHref(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place)}
-function timelineRows(){return [...document.querySelectorAll('#timelineEditor .timeline-row')].map(r=>({time:r.querySelector('.tl-time').value,content:r.querySelector('.tl-content').value.trim()})).filter(v=>v.time||v.content)}
-function addTimelineRow(step={}){const row=document.createElement('div');row.className='timeline-row';row.innerHTML=`<input type="time" class="tl-time" step="900" value="${esc(step.time||'')}"><input class="tl-content" placeholder="撮影内容" value="${esc(step.content||'')}"><button type="button" class="remove-step" title="削除">×</button>`;row.querySelector('.remove-step').onclick=()=>{row.remove();if(!document.querySelector('#timelineEditor .timeline-row'))addTimelineRow()};$('timelineEditor').appendChild(row)}
+function timelineRows(){return [...document.querySelectorAll('#timelineEditor .timeline-row')].map(r=>({time:r.querySelector('.tl-time').value,location:r.querySelector('.tl-location').value.trim(),content:r.querySelector('.tl-content').value.trim()})).filter(v=>v.time||v.location||v.content)}
+function addTimelineRow(step={}){const row=document.createElement('div');row.className='timeline-row';row.innerHTML=`<div class="timeline-row-top"><input type="time" class="tl-time" step="900" value="${esc(step.time||'')}"><input class="tl-location" placeholder="場所（例：スタジオA）" value="${esc(step.location||'')}"><button type="button" class="remove-step" title="削除">×</button></div><input class="tl-content" placeholder="撮影内容" value="${esc(step.content||'')}">`;row.querySelector('.remove-step').onclick=()=>{row.remove();if(!document.querySelector('#timelineEditor .timeline-row'))addTimelineRow()};$('timelineEditor').appendChild(row)}
 function setTimeline(steps=[]){$('timelineEditor').innerHTML='';(steps.length?steps:[{}]).forEach(addTimelineRow)}
 async function saveItem(data){const exists=items.some(x=>x.id===data.id);const url=exists?API+'?id=eq.'+encodeURIComponent(data.id):API;const r=await fetch(url,{method:exists?'PATCH':'POST',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(toDb(data))});if(!r.ok)throw new Error(await r.text());await loadItems()}
 async function deleteItem(id){const r=await fetch(API+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:HEADERS});if(!r.ok)throw new Error(await r.text());await loadItems()}
@@ -445,34 +472,63 @@ function allPhotographers(){return [...new Set(items.flatMap(x=>[...splitNames(x
 function isPhotographerInItem(x,name){if(!name)return true;return splitNames(x.participants).includes(name)||(x.owner||'').trim()===name}
 function renderPhotographerFilter(){const sel=$('photographerFilter');if(!sel)return;const current=sel.value;const names=allPhotographers();sel.innerHTML='<option value="">全員の撮影予定</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(names.includes(current))sel.value=current;else sel.value=''}
 
-/* ---------- 撮影対象者：候補選択ピッカー ---------- */
-let selectedSubjects=[];
-function syncSubjectHidden(){$('subject').value=selectedSubjects.join(', ')}
-function renderSubjectChips(){
-  $('subjectChips').innerHTML=selectedSubjects.map((n,i)=>`<span class="picker-chip">${esc(n)}<button type="button" data-i="${i}">×</button></span>`).join('');
-  $('subjectChips').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{selectedSubjects.splice(+b.dataset.i,1);syncSubjectHidden();renderSubjectChips()}));
-}
-function setSubjectSelection(str){selectedSubjects=splitNames(str);syncSubjectHidden();renderSubjectChips();$('subjectInput').value='';renderSubjectSuggest()}
-function addSubject(name){name=name.trim();if(!name)return;if(!selectedSubjects.includes(name))selectedSubjects.push(name);syncSubjectHidden();renderSubjectChips();$('subjectInput').value='';renderSubjectSuggest();$('subjectInput').focus()}
-function renderSubjectSuggest(){
-  const kw=$('subjectInput').value.trim().toLowerCase();
-  const candidates=allSubjects().filter(n=>!selectedSubjects.includes(n));
-  const filtered=(kw?candidates.filter(n=>n.toLowerCase().includes(kw)):candidates).slice(0,6);
-  let html=filtered.map(n=>`<div class="suggest-item" data-name="${esc(n)}"><span>${esc(n)}</span><span class="tag">候補</span></div>`).join('');
-  if(kw && !allSubjects().some(n=>n.toLowerCase()===kw)){
-    html+=`<div class="suggest-item addnew" data-name="${esc($('subjectInput').value.trim())}">＋「${esc($('subjectInput').value.trim())}」を新規追加</div>`;
+/* ---------- 候補選択ピッカー（複数選択：対象者・参加者） ---------- */
+function initMultiPicker({hiddenId,chipsId,inputId,suggestId,pickerId,candidatesFn,emptyLabel}){
+  let selected=[];
+  function sync(){$(hiddenId).value=selected.join(', ')}
+  function renderChips(){
+    $(chipsId).innerHTML=selected.map((n,i)=>`<span class="picker-chip">${esc(n)}<button type="button" data-i="${i}">×</button></span>`).join('');
+    $(chipsId).querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{selected.splice(+b.dataset.i,1);sync();renderChips()}));
   }
-  if(!kw && candidates.length===0){
-    html=`<div class="suggest-empty">登録済みの対象者がまだありません。名前を入力するとこの人を新規追加できます。</div>`;
+  function renderSuggest(){
+    const kw=$(inputId).value.trim().toLowerCase();
+    const all=candidatesFn();
+    const candidates=all.filter(n=>!selected.includes(n));
+    const filtered=(kw?candidates.filter(n=>n.toLowerCase().includes(kw)):candidates).slice(0,6);
+    let html=filtered.map(n=>`<div class="suggest-item" data-name="${esc(n)}"><span>${esc(n)}</span><span class="tag">候補</span></div>`).join('');
+    if(kw && !all.some(n=>n.toLowerCase()===kw)){
+      html+=`<div class="suggest-item addnew" data-name="${esc($(inputId).value.trim())}">＋「${esc($(inputId).value.trim())}」を新規追加</div>`;
+    }
+    if(!kw && candidates.length===0){
+      html=`<div class="suggest-empty">${emptyLabel}</div>`;
+    }
+    $(suggestId).innerHTML=html;
+    $(suggestId).querySelectorAll('.suggest-item').forEach(el=>el.addEventListener('click',()=>add(el.dataset.name)));
   }
-  $('subjectSuggest').innerHTML=html;
-  $('subjectSuggest').querySelectorAll('.suggest-item').forEach(el=>el.addEventListener('click',()=>addSubject(el.dataset.name)));
+  function add(name){name=name.trim();if(!name)return;if(!selected.includes(name))selected.push(name);sync();renderChips();$(inputId).value='';renderSuggest();$(inputId).focus()}
+  function setSelection(str){selected=splitNames(str);sync();renderChips();$(inputId).value='';renderSuggest()}
+  $(inputId).addEventListener('focus',renderSuggest);
+  $(inputId).addEventListener('input',renderSuggest);
+  $(inputId).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();add($(inputId).value)}});
+  $(pickerId).addEventListener('click',e=>{if(e.target===$(pickerId)||e.target===$(chipsId))$(inputId).focus()});
+  document.addEventListener('click',e=>{if(!$(pickerId).contains(e.target))$(suggestId).innerHTML=''});
+  return {setSelection};
 }
-$('subjectInput').addEventListener('focus',renderSubjectSuggest);
-$('subjectInput').addEventListener('input',renderSubjectSuggest);
-$('subjectInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addSubject($('subjectInput').value)}});
-$('subjectPicker').addEventListener('click',e=>{if(e.target===$('subjectPicker')||e.target===$('subjectChips'))$('subjectInput').focus()});
-document.addEventListener('click',e=>{if(!$('subjectPicker').contains(e.target))$('subjectSuggest').innerHTML=''});
+
+/* ---------- 候補選択ピッカー（単一選択：主担当・編集担当者） ---------- */
+function initSinglePicker({inputId,suggestId,wrapId,candidatesFn,emptyLabel}){
+  function renderSuggest(){
+    const kw=$(inputId).value.trim().toLowerCase();
+    const all=candidatesFn();
+    const filtered=(kw?all.filter(n=>n.toLowerCase().includes(kw)):all).slice(0,6);
+    let html=filtered.map(n=>`<div class="suggest-item" data-name="${esc(n)}"><span>${esc(n)}</span><span class="tag">候補</span></div>`).join('');
+    if(!kw && all.length===0){html=`<div class="suggest-empty">${emptyLabel}</div>`}
+    $(suggestId).innerHTML=html;
+    $(suggestId).querySelectorAll('.suggest-item').forEach(el=>el.addEventListener('click',()=>{$(inputId).value=el.dataset.name;$(suggestId).innerHTML=''}));
+  }
+  $(inputId).addEventListener('focus',renderSuggest);
+  $(inputId).addEventListener('input',renderSuggest);
+  $(inputId).addEventListener('keydown',e=>{if(e.key==='Enter')$(suggestId).innerHTML=''});
+  document.addEventListener('click',e=>{if(!$(wrapId).contains(e.target))$(suggestId).innerHTML=''});
+}
+
+function allParticipantsList(){return [...new Set(items.flatMap(x=>splitNames(x.participants)))].sort((a,b)=>a.localeCompare(b,'ja'))}
+function allOwners(){return [...new Set(items.map(x=>(x.owner||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'))}
+
+const subjectPicker=initMultiPicker({hiddenId:'subject',chipsId:'subjectChips',inputId:'subjectInput',suggestId:'subjectSuggest',pickerId:'subjectPicker',candidatesFn:allSubjects,emptyLabel:'登録済みの対象者がまだありません。名前を入力すると新規追加できます。'});
+const participantsPicker=initMultiPicker({hiddenId:'participants',chipsId:'participantsChips',inputId:'participantsInput',suggestId:'participantsSuggest',pickerId:'participantsPicker',candidatesFn:allParticipantsList,emptyLabel:'登録済みの参加者がまだありません。名前を入力すると新規追加できます。'});
+initSinglePicker({inputId:'owner',suggestId:'ownerSuggest',wrapId:'ownerWrap',candidatesFn:allOwners,emptyLabel:'登録済みの主担当がまだありません。名前を入力すると新規登録できます。'});
+initSinglePicker({inputId:'editor',suggestId:'editorSuggest',wrapId:'editorWrap',candidatesFn:allEditors,emptyLabel:'登録済みの編集担当者がまだありません。名前を入力すると新規登録できます。'});
 
 function renderStats(){
   $('countAll').textContent=items.length;
@@ -535,7 +591,7 @@ function renderDaily(){
  $('dailyEmpty').style.display=dayItems.length?'none':'block';
  $('dailySchedule').innerHTML=dayItems.map(x=>{
    const steps=(x.timeline||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 格納先を開く</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
+   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 格納先を開く</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px">📍 ${esc(st.location)}</div>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
  }).join('');
 }
 
@@ -568,11 +624,11 @@ function renderProgress(){
 function renderAll(){renderStats();renderList();renderPhotographerFilter();renderEditorFilter();renderCalendar();renderDaily();renderProgress()}
 
 /* ---------- form ---------- */
-function clearForm(){['id','date','time','project','location','meetingPlace','participants','owner','editor','gear','scenario','notes','storageLink'].forEach(k=>$(k).value='');$('status').value='調整中';setTimeline([]);setSubjectSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
+function clearForm(){['id','date','time','project','location','meetingPlace','owner','editor','gear','scenario','notes','storageLink'].forEach(k=>$(k).value='');$('status').value='調整中';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
  const u=getLoginUser(); if(u&&!$('owner').value)$('owner').value=u;
 }
 $('form').addEventListener('submit',async e=>{e.preventDefault();const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim()};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。データ格納先リンクや編集担当者の項目を追加した場合は、Supabaseのテーブルに storage_link・editor 列（ともにtext型）が必要です。')}});
-function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','location','meetingPlace','participants','owner','editor','status','gear','scenario','notes','storageLink'].forEach(k=>{if($(k))$(k).value=x[k]||''});setSubjectSelection(x.subject||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
+function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','location','meetingPlace','owner','editor','status','gear','scenario','notes','storageLink'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
 async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。')}}}
 $('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)return;if(!confirm('この撮影予定を削除しますか？この操作は取り消せません。'))return;try{await deleteItem(id);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('削除に失敗しました。')}});
 window.editItem=editItem;window.removeItem=removeItem;
