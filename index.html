@@ -444,15 +444,15 @@ textarea{min-height:76px;resize:vertical}
 
 <script>
 /* ===================== Supabase config (既存のまま) ===================== */
-const SUPABASE_URL='https://wiqdwmtxmzeefjywfetx.supabase.co';
-const SUPABASE_KEY='sb_publishable_lNtc_YKH9xVam0mNN0Qa-w_MqXzZxG5';
+const SUPABASE_URL='https://ivhtsbkasmevscmhxoyy.supabase.co';
+const SUPABASE_KEY='sb_publishable_yBGqfT_58s4EfRXFEFX5FA_cO3thj9l';
 const API=SUPABASE_URL+'/rest/v1/shooting_schedules';
 const HEADERS={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
 let items=[];
 const $=id=>document.getElementById(id);
 function fromDb(x){return {id:x.id,date:x.shoot_date,time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:x.status||'調整中',gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:x.notes||'',storageLink:x.storage_link||''}}
 function toDb(x){return {id:x.id,shoot_date:x.date,shoot_time:x.time||null,project_name:x.project,subjects:x.subject||null,location:x.location||null,meeting_place:x.meetingPlace||null,participants:x.participants||null,owner:x.owner||null,editor:x.editor||null,status:x.status,gear:x.gear||null,scenario:x.scenario||null,timeline:x.timeline||[],notes:x.notes||null,storage_link:x.storageLink||null}}
-async function loadItems(){try{const r=await fetch(API+'?select=*&order=shoot_date.asc,shoot_time.asc',{headers:HEADERS});if(!r.ok)throw new Error(await r.text());items=(await r.json()).map(fromDb);renderAll()}catch(e){console.error(e);alert('共有データの読み込みに失敗しました。')}}
+async function loadItems(){try{const r=await fetch(API+'?select=*&order=shoot_date.asc,shoot_time.asc',{headers:HEADERS});if(!r.ok)throw new Error(await r.text());items=(await r.json()).map(fromDb);renderAll()}catch(e){console.error(e);alert('共有データの読み込みに失敗しました。\n\n【詳細】\n'+(e.message||e))}}
 let viewDate=new Date(); viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth(),1);
 const statusOrder={'調整中':0,'確定':1,'撮影済':2,'編集中':3,'完了':4};
 function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
@@ -629,10 +629,10 @@ function renderAll(){renderStats();renderList();renderPhotographerFilter();rende
 function clearForm(){['id','date','time','project','location','meetingPlace','owner','editor','gear','scenario','notes','storageLink'].forEach(k=>$(k).value='');$('status').value='調整中';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
  const u=getLoginUser(); if(u&&!$('owner').value)$('owner').value=u;
 }
-$('form').addEventListener('submit',async e=>{e.preventDefault();const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim()};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。データ格納先リンクや編集担当者の項目を追加した場合は、Supabaseのテーブルに storage_link・editor 列（ともにtext型）が必要です。')}});
+$('form').addEventListener('submit',async e=>{e.preventDefault();const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim()};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
 function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','location','meetingPlace','owner','editor','status','gear','scenario','notes','storageLink'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
-async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。')}}}
-$('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)return;if(!confirm('この撮影予定を削除しますか？この操作は取り消せません。'))return;try{await deleteItem(id);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('削除に失敗しました。')}});
+async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}}}
+$('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)return;if(!confirm('この撮影予定を削除しますか？この操作は取り消せません。'))return;try{await deleteItem(id);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
 window.editItem=editItem;window.removeItem=removeItem;
 $('clearBtn').onclick=clearForm;
 $('addTimelineBtn').onclick=()=>addTimelineRow();
