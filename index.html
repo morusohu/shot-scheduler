@@ -45,9 +45,13 @@ h2{margin:0 0 10px;font-size:16px}
 
 label{display:block;font-size:12px;font-weight:800;margin:12px 0 6px;color:#57534e}
 input,select,textarea{width:100%;border:1px solid #fdba74;border-radius:10px;padding:11px 12px;background:#fff;color:var(--text);outline:none}
+input{min-height:46px;line-height:1.3}
+select{min-height:46px}
+input[type="date"],input[type="time"],input[type="url"]{-webkit-appearance:none;appearance:none;display:block}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(249,115,22,.13)}
 textarea{min-height:76px;resize:vertical}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row-date{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
 .hint{font-size:11px;color:var(--muted);margin-top:4px}
 .small{font-size:12px;color:var(--muted)}
 
@@ -89,7 +93,7 @@ textarea{min-height:76px;resize:vertical}
 .evcount{font-size:9px;color:#c2410c;font-weight:800}
 
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
-.b-adjust{background:#fef3c7;color:#92400e}.b-fixed{background:#dbeafe;color:#1d4ed8}.b-shot{background:#dcfce7;color:#166534}.b-edit{background:#ede9fe;color:#6d28d9}.b-done{background:#e7e5e4;color:#44403c}
+.b-adjust{background:#fef3c7;color:#92400e}.b-fixed{background:#dbeafe;color:#1d4ed8}.b-shot{background:#dcfce7;color:#166534}.b-edit{background:#ede9fe;color:#6d28d9}.b-approved{background:#e0e7ff;color:#3730a3}.b-done{background:#e7e5e4;color:#44403c}.b-ads{background:#fef9c3;color:#854d0e}
 .chips{display:flex;flex-wrap:wrap;gap:4px}
 .chip{display:inline-flex;background:#ffedd5;color:#9a3412;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700}
 .empty{text-align:center;color:var(--muted);padding:34px 0;font-size:13px}
@@ -151,10 +155,11 @@ textarea{min-height:76px;resize:vertical}
 .timeline-editor{border:1px solid #fed7aa;border-radius:12px;padding:10px;background:#fffaf5}
 .timeline-row{border:1px solid #fed7aa;border-radius:10px;padding:8px;margin-bottom:8px;background:#fff}
 .timeline-row:last-child{margin-bottom:0}
-.timeline-row-top{display:grid;grid-template-columns:96px 1fr 34px;gap:6px;align-items:center;margin-bottom:6px}
+.timeline-row-top{display:grid;grid-template-columns:108px 1fr 38px;gap:6px;align-items:center;margin-bottom:6px}
+.timeline-row .tl-type{width:100%;margin-bottom:6px;color:#a8a29e;font-weight:500}
+.timeline-row .tl-type.has-value{color:#9a3412;font-weight:700}
 .timeline-row input{margin:0;padding:9px 8px}
 .timeline-row .tl-content{width:100%}
-.timeline-row .tl-type{width:100%;margin-bottom:6px;color:#9a3412;font-weight:700}
 .remove-step{padding:9px 0;background:#fee2e2;color:#b91c1c;border-radius:8px;border:0;min-height:auto}
 .add-step{margin-top:8px;width:100%;background:#ffedd5;color:#9a3412;border:1px dashed #fb923c;border-radius:10px}
 
@@ -266,7 +271,7 @@ textarea{min-height:76px;resize:vertical}
         <input id="keyword" placeholder="案件・対象者・場所・担当で検索">
       </div>
       <div class="filterrow" style="margin-bottom:12px">
-        <select id="filterStatus"><option value="">全ステータス</option><option>調整中</option><option>確定</option><option>撮影済</option><option>編集中</option><option>完了</option></select>
+        <select id="filterStatus"><option value="">全ステータス</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済み</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
         <input type="date" id="filterDate" style="flex:1">
         <button class="btn ghost" id="resetFilter" type="button">解除</button>
       </div>
@@ -285,16 +290,17 @@ textarea{min-height:76px;resize:vertical}
     </section>
 
     <section id="progressPanel" class="panel">
+      <button class="btn primary full" id="quickAddBtn" type="button" style="margin-bottom:12px">＋ 対象者の進捗だけ登録する</button>
       <div class="progressgrid">
         <div class="pstat"><strong id="pSubjects">0</strong><span>対象者数</span></div>
-        <div class="pstat"><strong id="pShot">0</strong><span>撮影済以上</span></div>
-        <div class="pstat"><strong id="pComplete">0</strong><span>完了</span></div>
+        <div class="pstat"><strong id="pShot">0</strong><span>撮影完了以上</span></div>
+        <div class="pstat"><strong id="pComplete">0</strong><span>広告運用中</span></div>
       </div>
       <div class="toolbar">
         <input id="subjectKeyword" placeholder="対象者名で検索">
       </div>
       <div class="filterrow" style="margin-bottom:12px">
-        <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>調整中</option><option>確定</option><option>撮影済</option><option>編集中</option><option>完了</option></select>
+        <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済み</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
         <select id="subjectEditor" style="flex:1"><option value="">編集担当者：全員</option></select>
       </div>
       <div id="progressCards"></div>
@@ -327,9 +333,17 @@ textarea{min-height:76px;resize:vertical}
 
       <div class="form-section">
         <div class="form-section-title">📋 基本情報</div>
-        <div class="row"><div><label>撮影日 *</label><input type="date" id="date" required></div><div><label>時間</label><input type="time" id="time" step="900"></div></div>
+        <div class="row-date"><div><label>撮影日 *</label><input type="date" id="date" required></div><div><label>時間</label><input type="time" id="time" step="300"></div></div>
         <label>案件名 *</label><input id="project" placeholder="例：候補者撮影" required>
-        <label>ステータス</label><select id="status"><option>調整中</option><option>確定</option><option>撮影済</option><option>編集中</option><option>完了</option></select>
+        <label>ステータス</label><select id="status"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済み</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">🗓️ 事前打ち合わせ（任意）</div>
+        <div class="row-date"><div><label>打ち合わせ日</label><input type="date" id="meetingDate"></div><div><label>打ち合わせ時間</label><input type="time" id="meetingTime" step="300"></div></div>
+        <label>ミーティングURL</label>
+        <input type="url" id="meetingUrl" placeholder="例：Google Meet / Zoomの参加リンク">
+        <div class="hint">撮影前の打ち合わせがある場合に入力してください</div>
       </div>
 
       <div class="form-section">
@@ -370,7 +384,14 @@ textarea{min-height:76px;resize:vertical}
 
       <div class="form-section">
         <div class="form-section-title">📍 場所</div>
-        <label>撮影場所</label><input id="location" placeholder="例：公園・駅">
+        <label>撮影場所</label>
+        <input type="hidden" id="location">
+        <div class="picker" id="locationPicker">
+          <div class="picker-chips" id="locationChips"></div>
+          <input type="text" id="locationInput" placeholder="場所を入力、または候補から選択" autocomplete="off">
+          <div class="suggest-list" id="locationSuggest"></div>
+        </div>
+        <div class="hint">複数の場所を移動する場合は、それぞれ追加してください。最初に追加した場所が「撮影開始場所」として扱われます</div>
         <label>集合場所</label>
         <input type="text" id="meetingPlace" placeholder="例：駐車場">
         <div class="map-actions">
@@ -390,7 +411,7 @@ textarea{min-height:76px;resize:vertical}
         <label>日別の詳細撮影スケジュール</label>
         <div id="timelineEditor" class="timeline-editor"></div>
         <button type="button" class="add-step" id="addTimelineBtn">＋ 時間と撮影内容を追加</button>
-        <div class="hint">場所・目的は任意です。例：09:00 スタジオA／メイン動画／集合・機材準備 ／ 10:30 公園／本人なし風景Bロール／外観撮影</div>
+        <div class="hint">場所・目的は任意です。例：09:00 公園／メイン動画／集合・機材準備 ／ 10:30 駅／本人なし風景Bロール／外観撮影</div>
       </div>
 
       <div class="form-section">
@@ -398,6 +419,9 @@ textarea{min-height:76px;resize:vertical}
         <label>撮影データの格納先リンク</label>
         <input type="url" id="storageLink" placeholder="例：Googleドライブのフォルダ URL">
         <div class="hint">撮影データ（写真・動画）を保存したGoogleドライブなどのURLを貼ってください</div>
+        <label>編集動画の公開先URL</label>
+        <input type="url" id="publishedUrl" placeholder="例：YouTube/広告managerの公開リンク">
+        <div class="hint">編集が完了した動画の公開先・掲載先のURLを貼ってください</div>
         <label>備考</label><textarea id="notes" placeholder="必要物、衣装、注意事項など"></textarea>
       </div>
 
@@ -405,6 +429,33 @@ textarea{min-height:76px;resize:vertical}
       <button class="btn danger full" type="button" id="deleteBtn" style="display:none;margin-top:10px">🗑️ この撮影予定を削除する</button>
       <p class="small" style="margin-top:12px">※ このデータはチームで共有されるオンラインデータベースに保存されます。</p>
     </form>
+  </div>
+</div>
+
+<!-- ============ QUICK PROGRESS SHEET ============ -->
+<div class="sheet" id="quickSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><h2>対象者の進捗を登録</h2><button class="closebtn" id="closeQuick" type="button">×</button></div>
+  <div class="sheet-body">
+    <div class="hint">日付や場所などの詳細を省略して、対象者の進捗だけをすぐに登録できます。過去の撮影や、これから編集に入る案件などに便利です。</div>
+    <label>案件名 *</label><input id="quickProject" placeholder="例：候補者撮影">
+    <label>撮影対象者 *</label>
+    <div class="autocomplete" id="quickSubjectWrap">
+      <input id="quickSubject" placeholder="対象者名" autocomplete="off">
+      <div class="suggest-list" id="quickSubjectSuggest"></div>
+    </div>
+    <label>ステータス</label>
+    <select id="quickStatus"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済み</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
+    <label>編集担当者</label>
+    <div class="autocomplete" id="quickEditorWrap">
+      <input id="quickEditor" placeholder="例：鈴木" autocomplete="off">
+      <div class="suggest-list" id="quickEditorSuggest"></div>
+    </div>
+    <label>撮影データの格納先リンク</label>
+    <input type="url" id="quickStorageLink" placeholder="例：Googleドライブのフォルダ URL">
+    <label>編集動画の公開先URL</label>
+    <input type="url" id="quickPublishedUrl" placeholder="例：YouTube/広告managerの公開リンク">
+    <div class="actions"><button class="btn primary full" id="quickSaveBtn" type="button">登録する</button></div>
   </div>
 </div>
 
@@ -450,21 +501,21 @@ const API=SUPABASE_URL+'/rest/v1/shooting_schedules';
 const HEADERS={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
 let items=[];
 const $=id=>document.getElementById(id);
-function fromDb(x){return {id:x.id,date:x.shoot_date,time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:x.status||'調整中',gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:x.notes||'',storageLink:x.storage_link||''}}
-function toDb(x){return {id:x.id,shoot_date:x.date,shoot_time:x.time||null,project_name:x.project,subjects:x.subject||null,location:x.location||null,meeting_place:x.meetingPlace||null,participants:x.participants||null,owner:x.owner||null,editor:x.editor||null,status:x.status,gear:x.gear||null,scenario:x.scenario||null,timeline:x.timeline||[],notes:x.notes||null,storage_link:x.storageLink||null}}
+function fromDb(x){return {id:x.id,date:x.shoot_date,time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:x.status||'撮影日程調整中',gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:x.notes||'',storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||''}}
+function toDb(x){return {id:x.id,shoot_date:x.date,shoot_time:x.time||null,project_name:x.project,subjects:x.subject||null,location:x.location||null,meeting_place:x.meetingPlace||null,participants:x.participants||null,owner:x.owner||null,editor:x.editor||null,status:x.status,gear:x.gear||null,scenario:x.scenario||null,timeline:x.timeline||[],notes:x.notes||null,storage_link:x.storageLink||null,pre_meeting_date:x.meetingDate||null,pre_meeting_time:x.meetingTime||null,meeting_url:x.meetingUrl||null,published_url:x.publishedUrl||null}}
 async function loadItems(){try{const r=await fetch(API+'?select=*&order=shoot_date.asc,shoot_time.asc',{headers:HEADERS});if(!r.ok)throw new Error(await r.text());items=(await r.json()).map(fromDb);renderAll()}catch(e){console.error(e);alert('共有データの読み込みに失敗しました。\n\n【詳細】\n'+(e.message||e))}}
 let viewDate=new Date(); viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth(),1);
-const statusOrder={'調整中':0,'確定':1,'撮影済':2,'編集中':3,'完了':4};
+const statusOrder={'撮影日程調整中':0,'撮影日確定':1,'撮影完了':2,'編集中':3,'本部承認済み':4,'動画データ受渡済（サムネ含む）':5,'Google広告運用中':6};
 function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function splitNames(s=''){return String(s).split(/[,、，;；\n]/).map(v=>v.trim()).filter(Boolean)}
 function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function fmtDateJp(ds){if(!ds)return '';const d=new Date(ds+'T00:00:00');const w=['日','月','火','水','木','金','土'][d.getDay()];return `${d.getMonth()+1}/${d.getDate()}(${w})`}
-function badge(s){return ({'調整中':'b-adjust','確定':'b-fixed','撮影済':'b-shot','編集中':'b-edit','完了':'b-done'})[s]||'b-done'}
+function badge(s){return ({'撮影日程調整中':'b-adjust','撮影日確定':'b-fixed','撮影完了':'b-shot','編集中':'b-edit','本部承認済み':'b-approved','動画データ受渡済（サムネ含む）':'b-done','Google広告運用中':'b-ads'})[s]||'b-done'}
 function chips(s){const a=splitNames(s);return a.length?`<div class="chips">${a.map(n=>`<span class="chip">${esc(n)}</span>`).join('')}</div>`:''}
 function mapHref(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place)}
 const SHOOT_TYPES=['メイン動画','本人ありBロール（エキストラ込み）','本人なし風景Bロール'];
 function timelineRows(){return [...document.querySelectorAll('#timelineEditor .timeline-row')].map(r=>({time:r.querySelector('.tl-time').value,location:r.querySelector('.tl-location').value.trim(),type:r.querySelector('.tl-type').value,content:r.querySelector('.tl-content').value.trim()})).filter(v=>v.time||v.location||v.type||v.content)}
-function addTimelineRow(step={}){const row=document.createElement('div');row.className='timeline-row';row.innerHTML=`<div class="timeline-row-top"><input type="time" class="tl-time" step="900" value="${esc(step.time||'')}"><input class="tl-location" placeholder="場所（例：スタジオA）" value="${esc(step.location||'')}"><button type="button" class="remove-step" title="削除">×</button></div><select class="tl-type"><option value="">目的（任意）</option>${SHOOT_TYPES.map(t=>`<option value="${esc(t)}" ${step.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select><input class="tl-content" placeholder="撮影内容" value="${esc(step.content||'')}">`;row.querySelector('.remove-step').onclick=()=>{row.remove();if(!document.querySelector('#timelineEditor .timeline-row'))addTimelineRow()};$('timelineEditor').appendChild(row)}
+function addTimelineRow(step={}){const row=document.createElement('div');row.className='timeline-row';row.innerHTML=`<div class="timeline-row-top"><input type="time" class="tl-time" step="300" value="${esc(step.time||'')}"><input class="tl-location" placeholder="場所（例：公園）" value="${esc(step.location||'')}"><button type="button" class="remove-step" title="削除">×</button></div><div class="map-actions" style="margin-bottom:6px"><button type="button" class="btn ghost tl-map-btn" style="flex:1;font-size:12px;padding:8px">🗺️ 地図を見る</button><button type="button" class="btn ghost tl-route-btn" style="flex:1;font-size:12px;padding:8px">🚗 ルート</button></div><select class="tl-type ${step.type?'has-value':''}"><option value="">未選択</option>${SHOOT_TYPES.map(t=>`<option value="${esc(t)}" ${step.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select><input class="tl-content" placeholder="撮影内容" value="${esc(step.content||'')}">`;row.querySelector('.remove-step').onclick=()=>{row.remove();if(!document.querySelector('#timelineEditor .timeline-row'))addTimelineRow()};row.querySelector('.tl-type').addEventListener('change',e=>e.target.classList.toggle('has-value',!!e.target.value));row.querySelector('.tl-map-btn').addEventListener('click',()=>{const loc=row.querySelector('.tl-location').value.trim();if(!loc){alert('場所を入力してください。');return}window.open(mapHref(loc),'_blank','noopener')});row.querySelector('.tl-route-btn').addEventListener('click',()=>{const loc=row.querySelector('.tl-location').value.trim();if(!loc){alert('場所を入力してください。');return}window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(loc)+'&travelmode=driving','_blank','noopener')});$('timelineEditor').appendChild(row)}
 function setTimeline(steps=[]){$('timelineEditor').innerHTML='';(steps.length?steps:[{}]).forEach(addTimelineRow)}
 async function saveItem(data){const exists=items.some(x=>x.id===data.id);const url=exists?API+'?id=eq.'+encodeURIComponent(data.id):API;const r=await fetch(url,{method:exists?'PATCH':'POST',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(toDb(data))});if(!r.ok)throw new Error(await r.text());await loadItems()}
 async function deleteItem(id){const r=await fetch(API+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:HEADERS});if(!r.ok)throw new Error(await r.text());await loadItems()}
@@ -529,12 +580,16 @@ function allOwners(){return [...new Set(items.map(x=>(x.owner||'').trim()).filte
 
 const subjectPicker=initMultiPicker({hiddenId:'subject',chipsId:'subjectChips',inputId:'subjectInput',suggestId:'subjectSuggest',pickerId:'subjectPicker',candidatesFn:allSubjects,emptyLabel:'登録済みの対象者がまだありません。名前を入力すると新規追加できます。'});
 const participantsPicker=initMultiPicker({hiddenId:'participants',chipsId:'participantsChips',inputId:'participantsInput',suggestId:'participantsSuggest',pickerId:'participantsPicker',candidatesFn:allParticipantsList,emptyLabel:'登録済みの参加者がまだありません。名前を入力すると新規追加できます。'});
+function allLocations(){return [...new Set(items.flatMap(x=>splitNames(x.location)))].sort((a,b)=>a.localeCompare(b,'ja'))}
+const locationPicker=initMultiPicker({hiddenId:'location',chipsId:'locationChips',inputId:'locationInput',suggestId:'locationSuggest',pickerId:'locationPicker',candidatesFn:allLocations,emptyLabel:'登録済みの撮影場所がまだありません。場所を入力すると新規追加できます。'});
 initSinglePicker({inputId:'owner',suggestId:'ownerSuggest',wrapId:'ownerWrap',candidatesFn:allOwners,emptyLabel:'登録済みの主担当がまだありません。名前を入力すると新規登録できます。'});
 initSinglePicker({inputId:'editor',suggestId:'editorSuggest',wrapId:'editorWrap',candidatesFn:allEditors,emptyLabel:'登録済みの編集担当者がまだありません。名前を入力すると新規登録できます。'});
+initSinglePicker({inputId:'quickSubject',suggestId:'quickSubjectSuggest',wrapId:'quickSubjectWrap',candidatesFn:allSubjects,emptyLabel:'登録済みの対象者がまだありません。名前を入力すると新規登録できます。'});
+initSinglePicker({inputId:'quickEditor',suggestId:'quickEditorSuggest',wrapId:'quickEditorWrap',candidatesFn:allEditors,emptyLabel:'登録済みの編集担当者がまだありません。名前を入力すると新規登録できます。'});
 
 function renderStats(){
   $('countAll').textContent=items.length;
-  $('countFixed').textContent=items.filter(x=>x.status==='確定').length;
+  $('countFixed').textContent=items.filter(x=>x.status==='撮影日確定').length;
   $('countToday').textContent=items.filter(x=>x.date===todayStr()).length;
   $('countSubjects').textContent=allSubjects().length;
 }
@@ -557,7 +612,9 @@ function renderList(){
       ${x.editor?`<span>🖥️ 編集：${esc(x.editor)}</span>`:''}
     </div>
     ${chips(x.subject)}
+    ${(x.meetingDate||x.meetingUrl)?`<div style="margin-bottom:6px;font-size:12px;color:var(--muted)">🗓️ 打ち合わせ：${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">参加する</a>`:''}</div>`:''}
     ${x.storageLink?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを見る</a></div>`:''}
+    ${x.publishedUrl?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る</a></div>`:''}
     <div class="shootcard-actions">
       <button class="link" onclick="editItem('${x.id}')">編集</button>
       <button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button>
@@ -593,7 +650,7 @@ function renderDaily(){
  $('dailyEmpty').style.display=dayItems.length?'none':'block';
  $('dailySchedule').innerHTML=dayItems.map(x=>{
    const steps=(x.timeline||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 格納先を開く</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px">📍 ${esc(st.location)}</div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
+   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${(x.meetingDate||x.meetingUrl)?`<div class="sectionlabel">事前打ち合わせ</div><div class="small">${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加</a>`:''}</div>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 格納先を開く</a>`:''}${x.publishedUrl?`<div class="sectionlabel">公開動画</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開先を開く</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px">📍 ${esc(st.location)}</div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
  }).join('');
 }
 
@@ -604,7 +661,7 @@ function buildSubjectRows(){
  const today=todayStr();
  return allSubjects().map(name=>{
    const related=items.filter(x=>splitNames(x.subject).includes(name)).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
-   const latestStatus=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'調整中');
+   const latestStatus=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
    const next=related.find(x=>x.date>=today && statusOrder[x.status]<4);
    const editors=[...new Set(related.map(x=>(x.editor||'').trim()).filter(Boolean))];
    return {name,status:latestStatus,count:related.length,next:next?`${fmtDateJp(next.date)}${next.time?' '+next.time:''}`:'-',projects:[...new Set(related.map(x=>x.project))],editors};
@@ -613,8 +670,8 @@ function buildSubjectRows(){
 function renderProgress(){
  const rows=buildSubjectRows(); const kw=$('subjectKeyword').value.trim().toLowerCase(),fs=$('subjectStatus').value,fe=$('subjectEditor').value;
  const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.status===fs)&&(!fe||r.editors.includes(fe)));
- $('pSubjects').textContent=rows.length;$('pShot').textContent=rows.filter(r=>statusOrder[r.status]>=2).length;$('pComplete').textContent=rows.filter(r=>r.status==='完了').length;
- $('progressCards').innerHTML=filtered.map(r=>{const pct=[20,40,60,80,100][statusOrder[r.status]??0];return `
+ $('pSubjects').textContent=rows.length;$('pShot').textContent=rows.filter(r=>statusOrder[r.status]>=2).length;$('pComplete').textContent=rows.filter(r=>r.status==='Google広告運用中').length;
+ $('progressCards').innerHTML=filtered.map(r=>{const total=Object.keys(statusOrder).length;const pct=Math.round(100*((statusOrder[r.status]??0)+1)/total);return `
   <div class="progresscard">
     <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)}">${esc(r.status)}</span></div>
     <div class="bar"><span style="width:${pct}%"></span></div>
@@ -626,11 +683,11 @@ function renderProgress(){
 function renderAll(){renderStats();renderList();renderPhotographerFilter();renderEditorFilter();renderCalendar();renderDaily();renderProgress()}
 
 /* ---------- form ---------- */
-function clearForm(){['id','date','time','project','location','meetingPlace','owner','editor','gear','scenario','notes','storageLink'].forEach(k=>$(k).value='');$('status').value='調整中';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
+function clearForm(){['id','date','time','project','meetingPlace','owner','editor','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl'].forEach(k=>$(k).value='');$('status').value='撮影日程調整中';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');locationPicker.setSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
  const u=getLoginUser(); if(u&&!$('owner').value)$('owner').value=u;
 }
-$('form').addEventListener('submit',async e=>{e.preventDefault();const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim()};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
-function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','location','meetingPlace','owner','editor','status','gear','scenario','notes','storageLink'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
+$('form').addEventListener('submit',async e=>{e.preventDefault();const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim()};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
+function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','meetingPlace','owner','editor','status','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');locationPicker.setSelection(x.location||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
 async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}}}
 $('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)return;if(!confirm('この撮影予定を削除しますか？この操作は取り消せません。'))return;try{await deleteItem(id);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
 window.editItem=editItem;window.removeItem=removeItem;
@@ -674,10 +731,21 @@ document.querySelectorAll('.navbtn').forEach(btn=>btn.addEventListener('click',(
 function openSheet(sheet){sheet.classList.add('show');$('sheetOverlay').classList.add('show');document.body.style.overflow='hidden'}
 function closeSheet(sheet){sheet.classList.remove('show');$('sheetOverlay').classList.remove('show');document.body.style.overflow=''}
 $('fabAdd').addEventListener('click',()=>{clearForm();openSheet($('formSheet'))});
+function clearQuickForm(){['quickProject','quickSubject','quickEditor','quickStorageLink','quickPublishedUrl'].forEach(k=>$(k).value='');$('quickStatus').value='編集中';$('quickSubjectSuggest').innerHTML='';$('quickEditorSuggest').innerHTML=''}
+$('quickAddBtn').addEventListener('click',()=>{clearQuickForm();openSheet($('quickSheet'))});
+$('closeQuick').addEventListener('click',()=>closeSheet($('quickSheet')));
+$('quickSaveBtn').addEventListener('click',async()=>{
+  const project=$('quickProject').value.trim();
+  const subject=$('quickSubject').value.trim();
+  if(!project){alert('案件名を入力してください。');return}
+  if(!subject){alert('撮影対象者を入力してください。');return}
+  const data={id:crypto.randomUUID(),date:todayStr(),time:'',project,subject,location:'',meetingPlace:'',participants:'',owner:'',editor:$('quickEditor').value.trim(),status:$('quickStatus').value,gear:'',scenario:'',timeline:[],notes:'',storageLink:$('quickStorageLink').value.trim(),meetingDate:'',meetingTime:'',meetingUrl:'',publishedUrl:$('quickPublishedUrl').value.trim()};
+  try{await saveItem(data);clearQuickForm();closeSheet($('quickSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}
+});
 $('closeForm').addEventListener('click',()=>closeSheet($('formSheet')));
 $('menuBtn').addEventListener('click',()=>{fillProfileSheet();openSheet($('profileSheet'))});
 $('closeProfile').addEventListener('click',()=>closeSheet($('profileSheet')));
-$('sheetOverlay').addEventListener('click',()=>{closeSheet($('formSheet'));closeSheet($('profileSheet'))});
+$('sheetOverlay').addEventListener('click',()=>{closeSheet($('formSheet'));closeSheet($('profileSheet'));closeSheet($('quickSheet'))});
 
 /* ===================== ログイン & ログインリンク ===================== */
 const LOGIN_KEY='shoot_app_login_user';
