@@ -90,6 +90,9 @@ textarea{min-height:76px;resize:vertical}
 .daynum{font-size:11px;font-weight:800;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .evdots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}
 .evdot{width:5px;height:5px;border-radius:50%;background:#f97316}
+.evdot.mtg{background:#2563eb}
+.daily-meeting{border:1px solid #bfdbfe;border-radius:14px;padding:13px;margin-bottom:12px;background:#eff6ff}
+.daily-meeting h3{margin:0 0 5px;color:#1d4ed8;font-size:16px}
 .evcount{font-size:9px;color:#c2410c;font-weight:800}
 
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
@@ -683,14 +686,18 @@ function renderCalendar(){
  const y=viewDate.getFullYear(),m=viewDate.getMonth(); $('calendarTitle').textContent=`${y}年 ${m+1}月`;
  const photographer=$('photographerFilter')?$('photographerFilter').value:'';
  const monthItems=items.filter(x=>{if(!x.date)return false;const d=new Date(x.date+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
- if($('photographerCount')) $('photographerCount').textContent=photographer?`${photographer}さんの今月の撮影：${monthItems.length}件`:`今月の撮影：${monthItems.length}件`;
+ const monthMeetings=items.filter(x=>{if(!x.meetingDate)return false;const d=new Date(x.meetingDate+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
+ if($('photographerCount')) $('photographerCount').textContent=photographer?`${photographer}さん：撮影${monthItems.length}件・MTG${monthMeetings.length}件`:`今月：撮影${monthItems.length}件・MTG${monthMeetings.length}件`;
  const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay()); const dows=['日','月','火','水','木','金','土'];
  let html=dows.map(d=>`<div class="dow">${d}</div>`).join('');
  for(let i=0;i<42;i++){
-   const d=new Date(start); d.setDate(start.getDate()+i); const ds=fmtDate(d); const ev=items.filter(x=>x.date===ds&&isPhotographerInItem(x,photographer));
+   const d=new Date(start); d.setDate(start.getDate()+i); const ds=fmtDate(d);
+   const shoots=items.filter(x=>x.date===ds&&isPhotographerInItem(x,photographer));
+   const mtgs=items.filter(x=>x.meetingDate===ds&&isPhotographerInItem(x,photographer));
    const cls=['day']; if(d.getMonth()!==m)cls.push('other'); if(ds===todayStr())cls.push('today');
-   const dots=ev.slice(0,4).map(()=>'<span class="evdot"></span>').join('');
-   html+=`<button type="button" class="${cls.join(' ')}" onclick="goToDay('${ds}')"><span class="daynum">${d.getDate()}</span>${ev.length?`<span class="evdots">${dots}</span>`:''}${ev.length>4?`<span class="evcount">+${ev.length-4}</span>`:''}</button>`;
+   const marks=[...shoots.map(()=>'<span class="evdot" title="撮影"></span>'),...mtgs.map(()=>'<span class="evdot mtg" title="撮影前MTG"></span>')];
+   const dots=marks.slice(0,4).join(''), total=marks.length;
+   html+=`<button type="button" class="${cls.join(' ')}" onclick="goToDay('${ds}')"><span class="daynum">${d.getDate()}</span>${total?`<span class="evdots">${dots}</span>`:''}${total>4?`<span class="evcount">+${total-4}</span>`:''}</button>`;
  }
  $('calendar').innerHTML=html;
 }
@@ -701,11 +708,18 @@ window.goToDay=goToDay;
 function renderDaily(){
  const date=$('dailyDate').value||todayStr(); if(!$('dailyDate').value)$('dailyDate').value=date;
  const dayItems=items.filter(x=>x.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
- $('dailyCount').textContent=`${fmtDateJp(date)}：${dayItems.length}件の撮影`;
- $('dailyEmpty').style.display=dayItems.length?'none':'block';
- $('dailySchedule').innerHTML=dayItems.map(x=>{
+ const mtgItems=items.filter(x=>x.meetingDate===date).sort((a,b)=>(a.meetingTime||'').localeCompare(b.meetingTime||''));
+ $('dailyCount').textContent=`${fmtDateJp(date)}：撮影 ${dayItems.length}件・撮影前MTG ${mtgItems.length}件`;
+ $('dailyEmpty').style.display=(dayItems.length||mtgItems.length)?'none':'block';
+ const events=[];
+ dayItems.forEach(x=>events.push({kind:'shoot',time:x.time||'',x}));
+ mtgItems.forEach(x=>events.push({kind:'mtg',time:x.meetingTime||'',x}));
+ events.sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+ $('dailySchedule').innerHTML=events.map(ev=>{
+   const x=ev.x;
+   if(ev.kind==='mtg') return `<div class="daily-meeting"><h3>💬 撮影前MTG｜${esc(x.project)}</h3><div class="daily-meta"><span>🕒 ${esc(x.meetingTime||'時間未設定')}</span>${x.subject?`<span>👤 ${esc(x.subject)}</span>`:''}${x.owner?`<span>主担当：${esc(x.owner)}</span>`:''}</div>${x.meetingUrl?`<div style="margin-top:8px"><a class="maplink" style="color:#1d4ed8;font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加 ↗</a></div>`:''}<div style="margin-top:10px"><button class="link" onclick="editItem('${x.id}')">予定を編集</button></div></div>`;
    const steps=(x.timeline||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>動画編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${(x.meetingDate||x.meetingUrl)?`<div class="sectionlabel">事前打ち合わせ</div><div class="small">${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加</a>`:''}</div>`:''}${x.chouseisanUrl?`<div class="sectionlabel">日程調整</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを開く ↗</a>`:''}${x.publishedUrl?`<div class="sectionlabel">公開動画</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る ↗</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px"><a class="maplink" style="color:inherit;font-weight:800" href="${mapHref(st.location)}" target="_blank" rel="noopener">📍 ${esc(st.location)} ↗</a></div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
+   return `<div class="daily-shoot"><h3>🎥 ${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>動画編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${(x.meetingDate||x.meetingUrl)?`<div class="sectionlabel">事前打ち合わせ</div><div class="small">${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加</a>`:''}</div>`:''}${x.chouseisanUrl?`<div class="sectionlabel">日程調整</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを開く ↗</a>`:''}${x.publishedUrl?`<div class="sectionlabel">公開動画</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る ↗</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px"><a class="maplink" style="color:inherit;font-weight:800" href="${mapHref(st.location)}" target="_blank" rel="noopener">📍 ${esc(st.location)} ↗</a></div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`;
  }).join('');
 }
 
