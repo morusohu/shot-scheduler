@@ -769,7 +769,15 @@ function calendarLink(x,kind='shoot'){const u=googleCalendarHref(x,kind);return 
 function openSubjectDetail(name){
  const related=items.filter(x=>subjectNamesForItem(x).includes(name)).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
  if(!related.length)return;
- const editTarget=related[0];
+ // 同一対象者＋同一案件の重複登録は、詳細画面では1件にまとめて表示する。
+ // データ自体は削除せず、更新日時/登録順で先頭に来た最新レコードを代表として使う。
+ const seenProjects=new Set();
+ const detailRows=related.filter(x=>{
+   const key=(x.project||'').trim()||'__NO_PROJECT__';
+   if(seenProjects.has(key)) return false;
+   seenProjects.add(key); return true;
+ });
+ const editTarget=detailRows[0]||related[0];
  subjectDetailName=name;
  const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
  const federation=related.find(x=>x.federation)?.federation||'';
@@ -780,7 +788,7 @@ function openSubjectDetail(name){
    ${federation?`<div class="chip" style="display:inline-block;margin-bottom:10px">${esc(federation)}</div>`:''}
    ${editors.length?`<div style="margin-bottom:12px"><b>動画編集担当</b><div>${esc(editors.join(' / '))}</div></div>`:''}
    <div style="font-weight:900;margin:12px 0 7px">登録内容</div>
-   ${related.map(x=>`<div style="background:#fff;border:1px solid #ffedd5;border-radius:12px;padding:11px;margin-bottom:9px">
+   ${detailRows.map(x=>`<div style="background:#fff;border:1px solid #ffedd5;border-radius:12px;padding:11px;margin-bottom:9px">
       <div style="font-weight:900">${esc(x.project||'案件名なし')}</div>
       <div class="small" style="margin-top:5px">${x.date?`📅 ${esc(fmtDateJp(x.date))}${x.time?' '+esc(x.time):''}`:'📅 撮影日なし'}${x.location?`<br>📍 ${esc(x.location)}`:''}${x.status?`<br>進捗：${esc(x.status)}`:''}</div>
       ${x.meetingDate?`<div class="small" style="margin-top:6px">💬 撮影前MTG：${esc(fmtDateJp(x.meetingDate))}${x.meetingTime?' '+esc(x.meetingTime):''}</div>`:''}
