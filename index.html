@@ -111,6 +111,8 @@ textarea{min-height:76px;resize:vertical}
 .progresscard{background:#fff;border:1px solid #ffedd5;border-radius:14px;padding:13px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer}
 .progresscard:active{background:#fff7ed}
 .progresscard-hint{font-size:10px;color:#c2410c;margin-top:7px;font-weight:800}
+.status-choice{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:1px solid #fed7aa;border-radius:12px;padding:13px 12px;margin-bottom:8px;color:#292524;font-weight:800;min-height:50px}
+.status-choice:active{background:#fff7ed}.status-choice.current{border:2px solid #f97316;background:#fff7ed}.status-choice .check{width:22px;text-align:center;color:#f97316;font-size:16px;flex:none}.status-choice .status-label{flex:1}.status-choice .current-label{font-size:10px;color:#c2410c;font-weight:900}
 .progresscard-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .progresscard-top b{font-size:15px}
 .bar{height:8px;border-radius:999px;background:#e7e5e4;overflow:hidden;margin:6px 0}
@@ -305,6 +307,9 @@ textarea{min-height:76px;resize:vertical}
         <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
         <select id="subjectEditor" style="flex:1"><option value="">編集担当者：全員</option></select>
       </div>
+      <div class="filterrow" style="margin-bottom:12px">
+        <select id="subjectFederation" style="flex:1"><option value="">全県連</option><option>西県連</option><option>東県連</option><option>その他</option></select>
+      </div>
       <div id="progressCards"></div>
       <div id="progressEmpty" class="empty">撮影対象者が登録されていません。</div>
     </section>
@@ -358,6 +363,8 @@ textarea{min-height:76px;resize:vertical}
           <div class="suggest-list" id="subjectSuggest"></div>
         </div>
         <div class="hint">候補をタップして追加。新しい人はそのまま入力してEnter（またはリストの「追加」）で登録できます</div>
+        <label>県連区分</label>
+        <select id="federation"><option value="">未選択</option><option>西県連</option><option>東県連</option><option>その他</option></select>
         <label>撮影参加者</label>
         <input type="hidden" id="participants">
         <div class="picker" id="participantsPicker">
@@ -418,6 +425,9 @@ textarea{min-height:76px;resize:vertical}
 
       <div class="form-section">
         <div class="form-section-title">🗂️ その他</div>
+        <label>調整さんURL</label>
+        <input type="url" id="chouseisanUrl" placeholder="例：https://chouseisan.com/s?h=...">
+        <div class="hint">日程調整用の「調整さん」URLを貼ってください。一覧・日別画面から別タブで開けます</div>
         <label>撮影データの格納先リンク</label>
         <input type="url" id="storageLink" placeholder="例：Googleドライブのフォルダ URL">
         <div class="hint">撮影データ（写真・動画）を保存したGoogleドライブなどのURLを貼ってください</div>
@@ -446,6 +456,8 @@ textarea{min-height:76px;resize:vertical}
       <input id="quickSubject" placeholder="対象者名" autocomplete="off">
       <div class="suggest-list" id="quickSubjectSuggest"></div>
     </div>
+    <label>県連区分</label>
+    <select id="quickFederation"><option value="">未選択</option><option>西県連</option><option>東県連</option><option>その他</option></select>
     <label>ステータス</label>
     <select id="quickStatus"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
     <label>編集担当者</label>
@@ -458,6 +470,17 @@ textarea{min-height:76px;resize:vertical}
     <label>編集動画の公開先URL</label>
     <input type="url" id="quickPublishedUrl" placeholder="例：YouTube/広告managerの公開リンク">
     <div class="actions"><button class="btn primary full" id="quickSaveBtn" type="button">登録する</button></div>
+  </div>
+</div>
+
+
+<!-- ============ PROGRESS CHANGE SHEET ============ -->
+<div class="sheet" id="progressChangeSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><h2 id="progressChangeTitle">進捗を変更</h2><button class="closebtn" id="closeProgressChange" type="button">×</button></div>
+  <div class="sheet-body">
+    <div class="hint" style="margin-bottom:10px">変更する進捗をタップしてください。</div>
+    <div id="progressStatusChoices"></div>
   </div>
 </div>
 
@@ -503,11 +526,15 @@ const API=SUPABASE_URL+'/rest/v1/shooting_schedules';
 const HEADERS={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
 let items=[];
 const $=id=>document.getElementById(id);
-function fromDb(x){return {id:x.id,date:x.shoot_date,time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:(x.status==='本部承認済み'?'本部承認済':(x.status||'撮影日程調整中')),gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:x.notes||'',storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||''}}
+const CHOUSEISAN_MARK='[調整さんURL]';
+const FEDERATION_MARK='[県連区分]';
+function parseMetaNotes(notes=''){const lines=String(notes||'').split('\n');const c=lines.find(v=>v.startsWith(CHOUSEISAN_MARK));const f=lines.find(v=>v.startsWith(FEDERATION_MARK));return {url:c?c.slice(CHOUSEISAN_MARK.length).trim():'',federation:f?f.slice(FEDERATION_MARK.length).trim():'',notes:lines.filter(v=>!v.startsWith(CHOUSEISAN_MARK)&&!v.startsWith(FEDERATION_MARK)).join('\n').trim()}}
+function packNotes(notes='',url='',federation=''){const base=String(notes||'').trim();const c=url?CHOUSEISAN_MARK+url.trim():'';const f=federation?FEDERATION_MARK+federation.trim():'';return [base,c,f].filter(Boolean).join('\n')}
+function fromDb(x){const pn=parseMetaNotes(x.notes||'');return {id:x.id,date:x.shoot_date||'',time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:(x.status==='本部承認済み'?'本部承認済':(x.status||'撮影日程調整中')),gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:pn.notes,chouseisanUrl:pn.url,federation:pn.federation,storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||''}}
 function toDb(x){
   const payload = {
     id:x.id,
-    shoot_date:x.date,
+    shoot_date:x.date||null,
     shoot_time:x.time||null,
     project_name:x.project,
     subjects:x.subject||null,
@@ -520,7 +547,7 @@ function toDb(x){
     gear:x.gear||null,
     scenario:x.scenario||null,
     timeline:x.timeline||[],
-    notes:x.notes||null,
+    notes:packNotes(x.notes,x.chouseisanUrl,x.federation)||null,
     storage_link:x.storageLink||null,
     pre_meeting_date:x.meetingDate||null,
     pre_meeting_time:x.meetingTime||null,
@@ -616,7 +643,7 @@ initSinglePicker({inputId:'quickSubject',suggestId:'quickSubjectSuggest',wrapId:
 initSinglePicker({inputId:'quickEditor',suggestId:'quickEditorSuggest',wrapId:'quickEditorWrap',candidatesFn:allEditors,emptyLabel:'登録済みの編集担当者がまだありません。名前を入力すると新規登録できます。'});
 
 function renderStats(){
-  $('countAll').textContent=items.length;
+  $('countAll').textContent=items.filter(x=>x.date).length;
   $('countFixed').textContent=items.filter(x=>x.status==='撮影日確定').length;
   $('countToday').textContent=items.filter(x=>x.date===todayStr()).length;
   $('countSubjects').textContent=allSubjects().length;
@@ -625,7 +652,7 @@ function renderStats(){
 /* ---------- list (card layout) ---------- */
 function renderList(){
  const kw=$('keyword').value.trim().toLowerCase(),fs=$('filterStatus').value,fd=$('filterDate').value;
- const filtered=items.filter(x=>{const txt=[x.project,x.subject,x.location,x.participants,x.owner,x.gear,x.scenario,x.notes].join(' ').toLowerCase();return(!kw||txt.includes(kw))&&(!fs||x.status===fs)&&(!fd||x.date===fd)}).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+ const filtered=items.filter(x=>{if(!x.date)return false;const txt=[x.project,x.subject,x.location,x.participants,x.owner,x.gear,x.scenario,x.notes].join(' ').toLowerCase();return(!kw||txt.includes(kw))&&(!fs||x.status===fs)&&(!fd||x.date===fd)}).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
  $('listCards').innerHTML=filtered.map(x=>`
   <div class="shootcard">
     <div class="shootcard-top">
@@ -641,7 +668,7 @@ function renderList(){
     </div>
     ${chips(x.subject)}
     ${(x.meetingDate||x.meetingUrl)?`<div style="margin-bottom:6px;font-size:12px;color:var(--muted)">🗓️ 打ち合わせ：${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">参加する</a>`:''}</div>`:''}
-    ${x.storageLink?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを見る</a></div>`:''}
+    ${x.chouseisanUrl?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a></div>`:''}\n    ${x.storageLink?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを見る</a></div>`:''}
     ${x.publishedUrl?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る</a></div>`:''}
     <div class="shootcard-actions">
       <button class="link" onclick="editItem('${x.id}')">編集</button>
@@ -655,7 +682,7 @@ function renderList(){
 function renderCalendar(){
  const y=viewDate.getFullYear(),m=viewDate.getMonth(); $('calendarTitle').textContent=`${y}年 ${m+1}月`;
  const photographer=$('photographerFilter')?$('photographerFilter').value:'';
- const monthItems=items.filter(x=>{const d=new Date(x.date+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
+ const monthItems=items.filter(x=>{if(!x.date)return false;const d=new Date(x.date+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
  if($('photographerCount')) $('photographerCount').textContent=photographer?`${photographer}さんの今月の撮影：${monthItems.length}件`:`今月の撮影：${monthItems.length}件`;
  const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay()); const dows=['日','月','火','水','木','金','土'];
  let html=dows.map(d=>`<div class="dow">${d}</div>`).join('');
@@ -678,7 +705,7 @@ function renderDaily(){
  $('dailyEmpty').style.display=dayItems.length?'none':'block';
  $('dailySchedule').innerHTML=dayItems.map(x=>{
    const steps=(x.timeline||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${(x.meetingDate||x.meetingUrl)?`<div class="sectionlabel">事前打ち合わせ</div><div class="small">${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加</a>`:''}</div>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 格納先を開く</a>`:''}${x.publishedUrl?`<div class="sectionlabel">公開動画</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開先を開く</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px">📍 ${esc(st.location)}</div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
+   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${(x.meetingDate||x.meetingUrl)?`<div class="sectionlabel">事前打ち合わせ</div><div class="small">${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加</a>`:''}</div>`:''}${x.chouseisanUrl?`<div class="sectionlabel">日程調整</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 格納先を開く</a>`:''}${x.publishedUrl?`<div class="sectionlabel">公開動画</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開先を開く</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px">📍 ${esc(st.location)}</div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
  }).join('');
 }
 
@@ -690,40 +717,59 @@ function buildSubjectRows(){
  return allSubjects().map(name=>{
    const related=items.filter(x=>splitNames(x.subject).includes(name)).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
    const latestStatus=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
-   const next=related.find(x=>x.date>=today && statusOrder[x.status]<4);
+   const next=related.find(x=>x.date && x.date>=today && statusOrder[x.status]<4);
    const editors=[...new Set(related.map(x=>(x.editor||'').trim()).filter(Boolean))];
-   return {name,status:latestStatus,count:related.length,next:next?`${fmtDateJp(next.date)}${next.time?' '+next.time:''}`:'-',projects:[...new Set(related.map(x=>x.project))],editors};
+   const federation=[...related].reverse().find(x=>x.federation)?.federation||'';
+   return {name,status:latestStatus,count:related.length,next:next?`${fmtDateJp(next.date)}${next.time?' '+next.time:''}`:'-',projects:[...new Set(related.map(x=>x.project))],editors,federation};
  })
 }
 function renderProgress(){
- const rows=buildSubjectRows(); const kw=$('subjectKeyword').value.trim().toLowerCase(),fs=$('subjectStatus').value,fe=$('subjectEditor').value;
- const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.status===fs)&&(!fe||r.editors.includes(fe)));
+ const rows=buildSubjectRows(); const kw=$('subjectKeyword').value.trim().toLowerCase(),fs=$('subjectStatus').value,fe=$('subjectEditor').value,ff=$('subjectFederation').value;
+ const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.status===fs)&&(!fe||r.editors.includes(fe))&&(!ff||r.federation===ff));
  $('pSubjects').textContent=rows.length;$('pShot').textContent=rows.filter(r=>statusOrder[r.status]>=2).length;$('pComplete').textContent=rows.filter(r=>r.status==='Google広告運用中').length;
  $('progressCards').innerHTML=filtered.map(r=>{const total=Object.keys(statusOrder).length;const pct=Math.round(100*((statusOrder[r.status]??0)+1)/total);return `
   <div class="progresscard" role="button" tabindex="0" onclick="openSubjectProgress('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectProgress('${esc(r.name)}')}">
     <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)}">${esc(r.status)}</span></div>
     <div class="bar"><span style="width:${pct}%"></span></div>
-    <div class="progresscard-meta">${r.count}回撮影・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>編集担当：${esc(r.editors.join(' / '))}`:''}</div>
+    <div class="progresscard-meta">${r.federation?`<span class="chip" style="margin-bottom:5px">${esc(r.federation)}</span><br>`:''}${r.count}回撮影・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>編集担当：${esc(r.editors.join(' / '))}`:''}</div>
     <div class="progresscard-hint">タップして進捗を変更</div>
   </div>`}).join('');
  $('progressEmpty').style.display=filtered.length?'none':'block';
 }
 
-async function openSubjectProgress(name){
+let progressChangeSubject='';
+function openSubjectProgress(name){
+ const related=items.filter(x=>splitNames(x.subject).includes(name));
+ if(!related.length)return;
+ progressChangeSubject=name;
+ const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
+ $('progressChangeTitle').textContent=name+'さんの進捗を変更';
+ $('progressStatusChoices').innerHTML=Object.keys(statusOrder).map(st=>`
+   <button type="button" class="status-choice ${st===current?'current':''}" data-status="${esc(st)}">
+     <span class="check">${st===current?'✓':'○'}</span>
+     <span class="status-label">${esc(st)}</span>
+     ${st===current?'<span class="current-label">現在</span>':''}
+   </button>`).join('');
+ $('progressStatusChoices').querySelectorAll('.status-choice').forEach(btn=>btn.addEventListener('click',()=>changeSubjectProgress(btn.dataset.status)));
+ openSheet($('progressChangeSheet'));
+}
+async function changeSubjectProgress(newStatus){
+ const name=progressChangeSubject;
  const related=items.filter(x=>splitNames(x.subject).includes(name));
  if(!related.length)return;
  const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
- const statuses=Object.keys(statusOrder);
- const menu=statuses.map((st,i)=>`${i+1}. ${st}${st===current?'（現在）':''}`).join('\n');
- const answer=prompt(`${name}さんの進捗を変更します。\n\n${menu}\n\n番号を入力してください。`, String(statuses.indexOf(current)+1));
- if(answer===null)return;
- const idx=Number(answer)-1;
- if(!Number.isInteger(idx)||idx<0||idx>=statuses.length){alert('1〜'+statuses.length+'の番号を入力してください。');return}
- const newStatus=statuses[idx];
- if(newStatus===current)return;
+ if(newStatus===current){closeSheet($('progressChangeSheet'));return}
  if(!confirm(`${name}さんの進捗を「${newStatus}」に変更しますか？\n対象者が含まれる撮影データ ${related.length}件を更新します。`))return;
  try{
-   for(const x of related){await saveItem({...x,status:newStatus})}
+   const r=await fetch(API+'?subjects=ilike.*'+encodeURIComponent(name)+'*',{headers:HEADERS});
+   if(!r.ok)throw new Error(await r.text());
+   for(const x of related){
+     const url=API+'?id=eq.'+encodeURIComponent(x.id);
+     const rr=await fetch(url,{method:'PATCH',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({status:newStatus})});
+     if(!rr.ok)throw new Error(await rr.text());
+   }
+   closeSheet($('progressChangeSheet'));
+   await loadItems();
  }catch(err){console.error(err);alert('進捗の更新に失敗しました。\n\n【詳細】\n'+(err.message||err))}
 }
 window.openSubjectProgress=openSubjectProgress;
@@ -731,11 +777,11 @@ window.openSubjectProgress=openSubjectProgress;
 function renderAll(){renderStats();renderList();renderPhotographerFilter();renderEditorFilter();renderCalendar();renderDaily();renderProgress()}
 
 /* ---------- form ---------- */
-function clearForm(){['id','date','time','project','meetingPlace','owner','editor','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl'].forEach(k=>$(k).value='');$('status').value='撮影日程調整中';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');locationPicker.setSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
+function clearForm(){['id','date','time','project','meetingPlace','owner','editor','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl'].forEach(k=>$(k).value='');$('status').value='撮影日程調整中';$('federation').value='';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');locationPicker.setSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
  const u=getLoginUser(); if(u&&!$('owner').value)$('owner').value=u;
 }
-$('form').addEventListener('submit',async e=>{e.preventDefault();const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim()};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
-function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','meetingPlace','owner','editor','status','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');locationPicker.setSelection(x.location||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
+$('form').addEventListener('submit',async e=>{e.preventDefault();const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim(),chouseisanUrl:$('chouseisanUrl').value.trim(),federation:$('federation').value};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
+function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','meetingPlace','owner','editor','status','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl','federation'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');locationPicker.setSelection(x.location||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
 async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}}}
 $('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)return;if(!confirm('この撮影予定を削除しますか？この操作は取り消せません。'))return;try{await deleteItem(id);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
 window.editItem=editItem;window.removeItem=removeItem;
@@ -743,7 +789,7 @@ $('clearBtn').onclick=clearForm;
 $('addTimelineBtn').onclick=()=>addTimelineRow();
 ['keyword','filterStatus','filterDate'].forEach(k=>$(k).addEventListener('input',renderList));
 $('resetFilter').onclick=()=>{$('keyword').value='';$('filterStatus').value='';$('filterDate').value='';renderList()};
-['subjectKeyword','subjectStatus','subjectEditor'].forEach(k=>$(k).addEventListener('input',renderProgress));
+['subjectKeyword','subjectStatus','subjectEditor','subjectFederation'].forEach(k=>$(k).addEventListener('input',renderProgress));
 $('photographerFilter').addEventListener('change',renderCalendar);
 $('dailyDate').addEventListener('change',renderDaily);
 $('dailyToday').onclick=()=>{$('dailyDate').value=todayStr();renderDaily()};
@@ -779,21 +825,22 @@ document.querySelectorAll('.navbtn').forEach(btn=>btn.addEventListener('click',(
 function openSheet(sheet){sheet.classList.add('show');$('sheetOverlay').classList.add('show');document.body.style.overflow='hidden'}
 function closeSheet(sheet){sheet.classList.remove('show');$('sheetOverlay').classList.remove('show');document.body.style.overflow=''}
 $('fabAdd').addEventListener('click',()=>{clearForm();openSheet($('formSheet'))});
-function clearQuickForm(){['quickProject','quickSubject','quickEditor','quickStorageLink','quickPublishedUrl'].forEach(k=>$(k).value='');$('quickStatus').value='編集中';$('quickSubjectSuggest').innerHTML='';$('quickEditorSuggest').innerHTML=''}
+function clearQuickForm(){['quickProject','quickSubject','quickEditor','quickStorageLink','quickPublishedUrl'].forEach(k=>$(k).value='');$('quickStatus').value='編集中';$('quickFederation').value='';$('quickSubjectSuggest').innerHTML='';$('quickEditorSuggest').innerHTML=''}
 $('quickAddBtn').addEventListener('click',()=>{clearQuickForm();openSheet($('quickSheet'))});
 $('closeQuick').addEventListener('click',()=>closeSheet($('quickSheet')));
+$('closeProgressChange').addEventListener('click',()=>closeSheet($('progressChangeSheet')));
 $('quickSaveBtn').addEventListener('click',async()=>{
   const project=$('quickProject').value.trim();
   const subject=$('quickSubject').value.trim();
   if(!project){alert('案件名を入力してください。');return}
   if(!subject){alert('撮影対象者を入力してください。');return}
-  const data={id:crypto.randomUUID(),date:todayStr(),time:'',project,subject,location:'',meetingPlace:'',participants:'',owner:'',editor:$('quickEditor').value.trim(),status:$('quickStatus').value,gear:'',scenario:'',timeline:[],notes:'',storageLink:$('quickStorageLink').value.trim(),meetingDate:'',meetingTime:'',meetingUrl:'',publishedUrl:$('quickPublishedUrl').value.trim()};
+  const data={id:crypto.randomUUID(),date:'',time:'',project,subject,location:'',meetingPlace:'',participants:'',owner:'',editor:$('quickEditor').value.trim(),status:$('quickStatus').value,gear:'',scenario:'',timeline:[],notes:'',storageLink:$('quickStorageLink').value.trim(),meetingDate:'',meetingTime:'',meetingUrl:'',publishedUrl:$('quickPublishedUrl').value.trim(),chouseisanUrl:'',federation:$('quickFederation').value};
   try{await saveItem(data);clearQuickForm();closeSheet($('quickSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}
 });
 $('closeForm').addEventListener('click',()=>closeSheet($('formSheet')));
 $('menuBtn').addEventListener('click',()=>{fillProfileSheet();openSheet($('profileSheet'))});
 $('closeProfile').addEventListener('click',()=>closeSheet($('profileSheet')));
-$('sheetOverlay').addEventListener('click',()=>{closeSheet($('formSheet'));closeSheet($('profileSheet'));closeSheet($('quickSheet'))});
+$('sheetOverlay').addEventListener('click',()=>{closeSheet($('formSheet'));closeSheet($('profileSheet'));closeSheet($('quickSheet'));closeSheet($('progressChangeSheet'))});
 
 /* ===================== ログイン & ログインリンク ===================== */
 const LOGIN_KEY='shoot_app_login_user';
