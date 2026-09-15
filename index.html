@@ -290,6 +290,9 @@ textarea{min-height:76px;resize:vertical}
       <div class="toolbar">
         <input id="subjectKeyword" placeholder="対象者名で検索">
       </div>
+      <div class="filterrow" style="margin-bottom:10px">
+        <select id="subjectCompletion" style="flex:1"><option value="incomplete">未完了</option><option value="complete">完了</option><option value="all">すべて</option></select>
+      </div>
       <div class="filterrow" style="margin-bottom:12px">
         <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
         <select id="subjectEditor" style="flex:1"><option value="">動画編集担当：全員</option></select>
@@ -741,8 +744,11 @@ function buildSubjectRows(){
  })
 }
 function renderProgress(){
- const rows=buildSubjectRows(); const kw=$('subjectKeyword').value.trim().toLowerCase(),fs=$('subjectStatus').value,fe=$('subjectEditor').value,ff=$('subjectFederation').value;
- const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.statuses.includes(fs))&&(!fe||r.editors.includes(fe))&&(!ff||r.federation===ff));
+ const rows=buildSubjectRows(); const kw=$('subjectKeyword').value.trim().toLowerCase(),fc=$('subjectCompletion').value,fs=$('subjectStatus').value,fe=$('subjectEditor').value,ff=$('subjectFederation').value;
+ const filtered=rows.filter(r=>{
+   const finalIdx=statusOrder[r.finalStatus]??7,currentIdx=statusOrder[r.status]??0,complete=currentIdx>=finalIdx;
+   return (!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.statuses.includes(fs))&&(!fe||r.editors.includes(fe))&&(!ff||r.federation===ff)&&(fc==='all'||(fc==='complete'?complete:!complete));
+ });
 
  $('progressCards').innerHTML=filtered.map(r=>{const finalIdx=statusOrder[r.finalStatus]??7;const currentIdx=statusOrder[r.status]??0;const pct=Math.min(100,Math.round(100*(currentIdx+1)/(finalIdx+1)));const complete=currentIdx>=finalIdx;return `
   <div class="progresscard" role="button" tabindex="0" onclick="openSubjectDetail('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectDetail('${esc(r.name)}')}">
@@ -873,7 +879,7 @@ $('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)
 window.editItem=editItem;window.removeItem=removeItem;
 $('clearBtn').onclick=clearForm;
 $('addTimelineBtn').onclick=()=>addTimelineRow();
-['subjectKeyword','subjectStatus','subjectEditor','subjectFederation'].forEach(k=>$(k).addEventListener('input',renderProgress));
+['subjectKeyword','subjectCompletion','subjectStatus','subjectEditor','subjectFederation'].forEach(k=>$(k).addEventListener('input',renderProgress));
 document.querySelectorAll('.federationViewFilter').forEach(sel=>sel.addEventListener('change',()=>{viewFederation=sel.value;document.querySelectorAll('.federationViewFilter').forEach(other=>other.value=viewFederation);renderStats();renderCalendar();renderDaily();renderProgress();}));
 $('photographerFilter').addEventListener('change',renderCalendar);
 $('dailyDate').addEventListener('change',renderDaily);
