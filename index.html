@@ -261,6 +261,7 @@ textarea{min-height:76px;resize:vertical}
     <section id="calendarPanel" class="panel active">
       <div class="card">
         <div class="calfilter">
+          <select id="calendarFederation" class="federationViewFilter" style="flex:1"><option value="">すべての県連</option><option>西県連</option><option>東県連</option><option>その他</option></select>
           <select id="photographerFilter" style="flex:1"><option value="">全員の撮影予定</option></select>
         </div>
         <div class="small count" id="photographerCount" style="margin-bottom:8px"></div>
@@ -277,6 +278,7 @@ textarea{min-height:76px;resize:vertical}
       <div class="toolbar">
         <input id="keyword" placeholder="案件・対象者・場所・担当で検索">
       </div>
+      <div class="filterrow" style="margin-bottom:8px"><select id="listFederation" class="federationViewFilter" style="flex:1"><option value="">すべての県連</option><option>西県連</option><option>東県連</option><option>その他</option></select></div>
       <div class="filterrow" style="margin-bottom:12px">
         <select id="filterStatus"><option value="">全ステータス</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
         <input type="date" id="filterDate" style="flex:1">
@@ -287,6 +289,7 @@ textarea{min-height:76px;resize:vertical}
     </section>
 
     <section id="dailyPanel" class="panel">
+      <div class="filterrow" style="margin-bottom:8px"><select id="dailyFederation" class="federationViewFilter" style="flex:1"><option value="">すべての県連</option><option>西県連</option><option>東県連</option><option>その他</option></select></div>
       <div class="daily-datebar">
         <input type="date" id="dailyDate">
         <button type="button" class="btn ghost" id="dailyToday">今日</button>
@@ -306,7 +309,7 @@ textarea{min-height:76px;resize:vertical}
         <select id="subjectEditor" style="flex:1"><option value="">動画編集担当：全員</option></select>
       </div>
       <div class="filterrow" style="margin-bottom:12px">
-        <select id="subjectFederation" style="flex:1"><option value="">全県連</option><option>西県連</option><option>東県連</option><option>その他</option></select>
+        <select id="subjectFederation" class="federationViewFilter" style="flex:1"><option value="">すべての県連</option><option>西県連</option><option>東県連</option><option>その他</option></select>
       </div>
       <div id="progressCards"></div>
       <div id="progressEmpty" class="empty">撮影対象者が登録されていません。</div>
@@ -532,6 +535,8 @@ const API=SUPABASE_URL+'/rest/v1/shooting_schedules';
 const HEADERS={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
 let items=[];
 const $=id=>document.getElementById(id);
+let viewFederation='';
+const federationMatches=x=>!viewFederation||x.federation===viewFederation;
 const CHOUSEISAN_MARK='[調整さんURL]';
 const FEDERATION_MARK='[県連区分]';
 function parseMetaNotes(notes=''){const lines=String(notes||'').split('\n');const c=lines.find(v=>v.startsWith(CHOUSEISAN_MARK));const f=lines.find(v=>v.startsWith(FEDERATION_MARK));return {url:c?c.slice(CHOUSEISAN_MARK.length).trim():'',federation:f?f.slice(FEDERATION_MARK.length).trim():'',notes:lines.filter(v=>!v.startsWith(CHOUSEISAN_MARK)&&!v.startsWith(FEDERATION_MARK)).join('\n').trim()}}
@@ -649,16 +654,17 @@ initSinglePicker({inputId:'quickSubject',suggestId:'quickSubjectSuggest',wrapId:
 initSinglePicker({inputId:'quickEditor',suggestId:'quickEditorSuggest',wrapId:'quickEditorWrap',candidatesFn:allEditors,emptyLabel:'登録済みの動画編集担当がまだありません。名前を入力すると新規登録できます。'});
 
 function renderStats(){
-  $('countAll').textContent=items.filter(x=>x.date).length;
-  $('countFixed').textContent=items.filter(x=>x.status==='撮影日確定').length;
-  $('countToday').textContent=items.filter(x=>x.date===todayStr()).length;
-  $('countSubjects').textContent=allSubjects().length;
+  const scoped=items.filter(federationMatches);
+  $('countAll').textContent=scoped.filter(x=>x.date).length;
+  $('countFixed').textContent=scoped.filter(x=>x.date&&x.status==='撮影日確定').length;
+  $('countToday').textContent=scoped.filter(x=>x.date===todayStr()).length;
+  $('countSubjects').textContent=[...new Set(scoped.flatMap(x=>splitNames(x.subject)))].length;
 }
 
 /* ---------- list (card layout) ---------- */
 function renderList(){
  const kw=$('keyword').value.trim().toLowerCase(),fs=$('filterStatus').value,fd=$('filterDate').value;
- const filtered=items.filter(x=>{if(!x.date)return false;const txt=[x.project,x.subject,x.location,x.participants,x.owner,x.gear,x.scenario,x.notes].join(' ').toLowerCase();return(!kw||txt.includes(kw))&&(!fs||x.status===fs)&&(!fd||x.date===fd)}).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+ const filtered=items.filter(x=>{if(!x.date||!federationMatches(x))return false;const txt=[x.project,x.subject,x.location,x.participants,x.owner,x.gear,x.scenario,x.notes].join(' ').toLowerCase();return(!kw||txt.includes(kw))&&(!fs||x.status===fs)&&(!fd||x.date===fd)}).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
  $('listCards').innerHTML=filtered.map(x=>`
   <div class="shootcard">
     <div class="shootcard-top">
@@ -689,15 +695,15 @@ function renderList(){
 function renderCalendar(){
  const y=viewDate.getFullYear(),m=viewDate.getMonth(); $('calendarTitle').textContent=`${y}年 ${m+1}月`;
  const photographer=$('photographerFilter')?$('photographerFilter').value:'';
- const monthItems=items.filter(x=>{if(!x.date)return false;const d=new Date(x.date+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
- const monthMeetings=items.filter(x=>{if(!x.meetingDate)return false;const d=new Date(x.meetingDate+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
+ const monthItems=items.filter(x=>{if(!x.date||!federationMatches(x))return false;const d=new Date(x.date+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
+ const monthMeetings=items.filter(x=>{if(!x.meetingDate||!federationMatches(x))return false;const d=new Date(x.meetingDate+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
  if($('photographerCount')) $('photographerCount').textContent=photographer?`${photographer}さん：撮影${monthItems.length}件・MTG${monthMeetings.length}件`:`今月：撮影${monthItems.length}件・MTG${monthMeetings.length}件`;
  const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay()); const dows=['日','月','火','水','木','金','土'];
  let html=dows.map(d=>`<div class="dow">${d}</div>`).join('');
  for(let i=0;i<42;i++){
    const d=new Date(start); d.setDate(start.getDate()+i); const ds=fmtDate(d);
-   const shoots=items.filter(x=>x.date===ds&&isPhotographerInItem(x,photographer));
-   const mtgs=items.filter(x=>x.meetingDate===ds&&isPhotographerInItem(x,photographer));
+   const shoots=items.filter(x=>x.date===ds&&federationMatches(x)&&isPhotographerInItem(x,photographer));
+   const mtgs=items.filter(x=>x.meetingDate===ds&&federationMatches(x)&&isPhotographerInItem(x,photographer));
    const cls=['day']; if(d.getMonth()!==m)cls.push('other'); if(ds===todayStr())cls.push('today');
    const marks=[...shoots.map(()=>'<span class="evdot" title="撮影"></span>'),...mtgs.map(()=>'<span class="evdot mtg" title="撮影前MTG"></span>')];
    const dots=marks.slice(0,4).join(''), total=marks.length;
@@ -711,8 +717,8 @@ window.goToDay=goToDay;
 /* ---------- daily ---------- */
 function renderDaily(){
  const date=$('dailyDate').value||todayStr(); if(!$('dailyDate').value)$('dailyDate').value=date;
- const dayItems=items.filter(x=>x.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
- const mtgItems=items.filter(x=>x.meetingDate===date).sort((a,b)=>(a.meetingTime||'').localeCompare(b.meetingTime||''));
+ const dayItems=items.filter(x=>x.date===date&&federationMatches(x)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+ const mtgItems=items.filter(x=>x.meetingDate===date&&federationMatches(x)).sort((a,b)=>(a.meetingTime||'').localeCompare(b.meetingTime||''));
  $('dailyCount').textContent=`${fmtDateJp(date)}：撮影 ${dayItems.length}件・撮影前MTG ${mtgItems.length}件`;
  $('dailyEmpty').style.display=(dayItems.length||mtgItems.length)?'none':'block';
  const events=[];
@@ -851,6 +857,7 @@ $('addTimelineBtn').onclick=()=>addTimelineRow();
 ['keyword','filterStatus','filterDate'].forEach(k=>$(k).addEventListener('input',renderList));
 $('resetFilter').onclick=()=>{$('keyword').value='';$('filterStatus').value='';$('filterDate').value='';renderList()};
 ['subjectKeyword','subjectStatus','subjectEditor','subjectFederation'].forEach(k=>$(k).addEventListener('input',renderProgress));
+document.querySelectorAll('.federationViewFilter').forEach(sel=>sel.addEventListener('change',()=>{viewFederation=sel.value;document.querySelectorAll('.federationViewFilter').forEach(other=>other.value=viewFederation);renderStats();renderList();renderCalendar();renderDaily();renderProgress();}));
 $('photographerFilter').addEventListener('change',renderCalendar);
 $('dailyDate').addEventListener('change',renderDaily);
 $('dailyToday').onclick=()=>{$('dailyDate').value=todayStr();renderDaily()};
