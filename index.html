@@ -769,6 +769,7 @@ function calendarLink(x,kind='shoot'){const u=googleCalendarHref(x,kind);return 
 function openSubjectDetail(name){
  const related=items.filter(x=>subjectNamesForItem(x).includes(name)).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
  if(!related.length)return;
+ const editTarget=related[0];
  subjectDetailName=name;
  const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
  const federation=related.find(x=>x.federation)?.federation||'';
@@ -789,7 +790,7 @@ function openSubjectDetail(name){
       ${externalLink(x.publishedUrl,'🎬 公開動画を見る')}
       ${calendarLink(x,'shoot')}${x.meetingDate?calendarLink(x,'mtg'):''}
    </div>`).join('')}
-   <button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));editItem('${x.id}')">詳細を編集</button>`;
+   <button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));editItem('${editTarget.id}')">詳細を編集</button>`;
  openSheet($('subjectDetailSheet'));
 }
 window.openSubjectDetail=openSubjectDetail;
