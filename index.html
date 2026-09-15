@@ -113,7 +113,7 @@ textarea{min-height:76px;resize:vertical}
 
 .progresscard{background:#fff;border:1px solid #ffedd5;border-radius:14px;padding:13px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer}
 .progresscard:active{background:#fff7ed}
-.progresscard-hint{font-size:10px;color:#c2410c;margin-top:7px;font-weight:800}
+.progresscard-hint{font-size:10px;color:#78716c;margin-top:7px;font-weight:800}.progress-actions{display:flex;gap:8px;margin-top:10px}.progress-actions button{flex:1;border-radius:10px;padding:9px 8px;font-size:12px;font-weight:900}.progress-detail-btn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}.progress-change-btn{background:#f97316;color:#fff;border:1px solid #f97316}
 .status-choice{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:1px solid #fed7aa;border-radius:12px;padding:13px 12px;margin-bottom:8px;color:#292524;font-weight:800;min-height:50px}
 .status-choice:active{background:#fff7ed}.status-choice.current{border:2px solid #f97316;background:#fff7ed}.status-choice .check{width:22px;text-align:center;color:#f97316;font-size:16px;flex:none}.status-choice .status-label{flex:1}.status-choice .current-label{font-size:10px;color:#c2410c;font-weight:900}
 .progresscard-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -477,6 +477,14 @@ textarea{min-height:76px;resize:vertical}
 </div>
 
 
+
+<!-- ============ SUBJECT DETAIL SHEET ============ -->
+<div class="sheet" id="subjectDetailSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><h2 id="subjectDetailTitle">対象者の詳細</h2><button class="closebtn" id="closeSubjectDetail" type="button">×</button></div>
+  <div class="sheet-body" id="subjectDetailBody"></div>
+</div>
+
 <!-- ============ PROGRESS CHANGE SHEET ============ -->
 <div class="sheet" id="progressChangeSheet">
   <div class="sheet-handle"></div>
@@ -742,14 +750,45 @@ function renderProgress(){
  const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.status===fs)&&(!fe||r.editors.includes(fe))&&(!ff||r.federation===ff));
  $('pSubjects').textContent=rows.length;$('pShot').textContent=rows.filter(r=>statusOrder[r.status]>=2).length;$('pComplete').textContent=rows.filter(r=>r.status==='Google広告運用中').length;
  $('progressCards').innerHTML=filtered.map(r=>{const total=Object.keys(statusOrder).length;const pct=Math.round(100*((statusOrder[r.status]??0)+1)/total);return `
-  <div class="progresscard" role="button" tabindex="0" onclick="openSubjectProgress('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectProgress('${esc(r.name)}')}">
+  <div class="progresscard" role="button" tabindex="0" onclick="openSubjectDetail('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectDetail('${esc(r.name)}')}">
     <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)}">${esc(r.status)}</span></div>
     <div class="bar"><span style="width:${pct}%"></span></div>
-    <div class="progresscard-meta">${r.federation?`<span class="chip" style="margin-bottom:5px">${esc(r.federation)}</span><br>`:''}${r.count}回撮影・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>編集担当：${esc(r.editors.join(' / '))}`:''}</div>
-    <div class="progresscard-hint">タップして進捗を変更</div>
+    <div class="progresscard-meta">${r.federation?`<span class="chip" style="margin-bottom:5px">${esc(r.federation)}</span><br>`:''}${r.count}件・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>動画編集担当：${esc(r.editors.join(' / '))}`:''}</div>
+    <div class="progresscard-hint">タップして詳細を表示</div>
+    <div class="progress-actions"><button type="button" class="progress-detail-btn" onclick="event.stopPropagation();openSubjectDetail('${esc(r.name)}')">詳細を見る</button><button type="button" class="progress-change-btn" onclick="event.stopPropagation();openSubjectProgress('${esc(r.name)}')">進捗を変更</button></div>
   </div>`}).join('');
  $('progressEmpty').style.display=filtered.length?'none':'block';
 }
+
+let subjectDetailName='';
+function externalLink(url,label){return url?`<a class="maplink" style="display:block;margin-top:7px;color:#1d4ed8;font-weight:800" href="${esc(url)}" target="_blank" rel="noopener">${label} ↗</a>`:''}
+function openSubjectDetail(name){
+ const related=items.filter(x=>splitNames(x.subject).includes(name)).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
+ if(!related.length)return;
+ subjectDetailName=name;
+ const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
+ const federation=related.find(x=>x.federation)?.federation||'';
+ const editors=[...new Set(related.map(x=>(x.editor||'').trim()).filter(Boolean))];
+ $('subjectDetailTitle').textContent=name+'さんの詳細';
+ $('subjectDetailBody').innerHTML=`
+   <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px"><b style="font-size:17px">${esc(name)}</b><span class="badge ${badge(current)}">${esc(current)}</span></div>
+   ${federation?`<div class="chip" style="display:inline-block;margin-bottom:10px">${esc(federation)}</div>`:''}
+   ${editors.length?`<div style="margin-bottom:12px"><b>動画編集担当</b><div>${esc(editors.join(' / '))}</div></div>`:''}
+   <div style="font-weight:900;margin:12px 0 7px">登録内容</div>
+   ${related.map(x=>`<div style="background:#fff;border:1px solid #ffedd5;border-radius:12px;padding:11px;margin-bottom:9px">
+      <div style="font-weight:900">${esc(x.project||'案件名なし')}</div>
+      <div class="small" style="margin-top:5px">${x.date?`📅 ${esc(fmtDateJp(x.date))}${x.time?' '+esc(x.time):''}`:'📅 撮影日なし'}${x.location?`<br>📍 ${esc(x.location)}`:''}${x.status?`<br>進捗：${esc(x.status)}`:''}</div>
+      ${x.meetingDate?`<div class="small" style="margin-top:6px">💬 撮影前MTG：${esc(fmtDateJp(x.meetingDate))}${x.meetingTime?' '+esc(x.meetingTime):''}</div>`:''}
+      ${externalLink(x.meetingUrl,'🔗 ミーティングに参加')}
+      ${externalLink(x.chouseisanUrl,'📅 調整さんを開く')}
+      ${externalLink(x.storageLink,'📁 撮影データを開く')}
+      ${externalLink(x.publishedUrl,'🎬 公開動画を見る')}
+      <button type="button" class="link" style="margin-top:9px" onclick="closeSheet($('subjectDetailSheet'));editItem('${x.id}')">この登録を編集</button>
+   </div>`).join('')}
+   <button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));openSubjectProgress('${esc(name)}')">進捗を変更</button>`;
+ openSheet($('subjectDetailSheet'));
+}
+window.openSubjectDetail=openSubjectDetail;
 
 let progressChangeSubject='';
 function openSubjectProgress(name){
@@ -846,6 +885,7 @@ function clearQuickForm(){['quickProject','quickSubject','quickEditor','quickSto
 $('quickAddBtn').addEventListener('click',()=>{clearQuickForm();openSheet($('quickSheet'))});
 $('closeQuick').addEventListener('click',()=>closeSheet($('quickSheet')));
 $('closeProgressChange').addEventListener('click',()=>closeSheet($('progressChangeSheet')));
+$('closeSubjectDetail').addEventListener('click',()=>closeSheet($('subjectDetailSheet')));
 $('quickSaveBtn').addEventListener('click',async()=>{
   const project=$('quickProject').value.trim();
   const subject=$('quickSubject').value.trim();
