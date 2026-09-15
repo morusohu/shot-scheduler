@@ -499,7 +499,7 @@ textarea{min-height:76px;resize:vertical}
     </div>
     <div class="sharebtns">
       <button class="btn primary" id="shareLoginLink" type="button">📤 リンクを共有</button>
-      <button class="btn ghost" id="lineShareLink" type="button">LINEで送る</button>
+      <button class="btn ghost" id="chatworkShareLink" type="button">💬 Chatworkで送る</button>
     </div>
 
     <label style="margin-top:22px">お名前を変更</label>
@@ -932,11 +932,15 @@ $('shareLoginLink').addEventListener('click',async()=>{
   if(navigator.share){try{await navigator.share({title:'撮影・動画進捗管理 ログインリンク',text:`${name}さんのログインリンクです。タップするだけでアクセスできます（初回のみパスワードが必要です）。`,url});return}catch(e){/* cancelled */ return}}
   try{await navigator.clipboard.writeText(url);alert('リンクをコピーしました。メッセージアプリに貼り付けて共有してください。')}catch(e){}
 });
-$('lineShareLink').addEventListener('click',()=>{
-  const url=$('loginLinkInput').value;const name=getLoginUser();
-  const text=encodeURIComponent(`${name}さんのログインリンク：${url}
-（初回アクセス時はパスワードの入力が必要です）`);
-  window.open('https://line.me/R/msg/text/?'+text,'_blank','noopener');
+$('chatworkShareLink').addEventListener('click',async()=>{
+  const url=$('loginLinkInput').value;
+  try{
+    await navigator.clipboard.writeText(url);
+  }catch(e){
+    $('loginLinkInput').select();
+    document.execCommand('copy');
+  }
+  window.open('https://www.chatwork.com/','_blank','noopener');
 });
 $('saveProfileName').addEventListener('click',()=>{
   const v=$('profileNameEdit').value.trim(); if(!v){alert('お名前を入力してください。');return}
