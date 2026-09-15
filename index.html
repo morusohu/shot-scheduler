@@ -832,7 +832,7 @@ async function changeSubjectProgress(newStatus){
 }
 window.openSubjectProgress=openSubjectProgress;
 
-function renderAll(){renderStats();renderList();renderPhotographerFilter();renderEditorFilter();renderCalendar();renderDaily();renderProgress()}
+function renderAll(){renderStats();renderPhotographerFilter();renderEditorFilter();renderCalendar();renderDaily();renderProgress()}
 
 /* ---------- form ---------- */
 function clearForm(){['id','date','time','project','meetingPlace','owner','editor','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl'].forEach(k=>$(k).value='');$('status').value='撮影日程調整中';$('federation').value='';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');locationPicker.setSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
@@ -845,10 +845,8 @@ $('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)
 window.editItem=editItem;window.removeItem=removeItem;
 $('clearBtn').onclick=clearForm;
 $('addTimelineBtn').onclick=()=>addTimelineRow();
-['keyword','filterStatus','filterDate'].forEach(k=>$(k).addEventListener('input',renderList));
-$('resetFilter').onclick=()=>{$('keyword').value='';$('filterStatus').value='';$('filterDate').value='';renderList()};
 ['subjectKeyword','subjectStatus','subjectEditor','subjectFederation'].forEach(k=>$(k).addEventListener('input',renderProgress));
-document.querySelectorAll('.federationViewFilter').forEach(sel=>sel.addEventListener('change',()=>{viewFederation=sel.value;document.querySelectorAll('.federationViewFilter').forEach(other=>other.value=viewFederation);renderStats();renderList();renderCalendar();renderDaily();renderProgress();}));
+document.querySelectorAll('.federationViewFilter').forEach(sel=>sel.addEventListener('change',()=>{viewFederation=sel.value;document.querySelectorAll('.federationViewFilter').forEach(other=>other.value=viewFederation);renderStats();renderCalendar();renderDaily();renderProgress();}));
 $('photographerFilter').addEventListener('change',renderCalendar);
 $('dailyDate').addEventListener('change',renderDaily);
 $('dailyToday').onclick=()=>{$('dailyDate').value=todayStr();renderDaily()};
