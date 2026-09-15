@@ -293,12 +293,14 @@ textarea{min-height:76px;resize:vertical}
       <div class="filterrow" style="margin-bottom:10px">
         <select id="subjectCompletion" style="flex:1"><option value="incomplete">未完了</option><option value="complete">完了</option><option value="all">すべて</option></select>
       </div>
-      <div class="filterrow" style="margin-bottom:12px">
-        <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
-        <select id="subjectEditor" style="flex:1"><option value="">動画編集担当：全員</option></select>
+      <div class="filterrow" style="margin-bottom:10px">
+        <select id="subjectFederation" class="federationViewFilter" style="flex:1"><option value="">すべての県連</option><option>西県連</option><option>東県連</option><option>その他</option></select>
+      </div>
+      <div class="filterrow" style="margin-bottom:10px">
+        <select id="subjectEditor" style="flex:1"><option value="">動画編集担当：すべて</option></select>
       </div>
       <div class="filterrow" style="margin-bottom:12px">
-        <select id="subjectFederation" class="federationViewFilter" style="flex:1"><option value="">すべての県連</option><option>西県連</option><option>東県連</option><option>その他</option></select>
+        <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
       </div>
       <div id="progressCards"></div>
       <div id="progressEmpty" class="empty">撮影対象者が登録されていません。</div>
@@ -729,7 +731,7 @@ function renderDaily(){
 
 /* ---------- progress (card layout) ---------- */
 function allEditors(){return [...new Set(items.map(x=>(x.editor||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'))}
-function renderEditorFilter(){const sel=$('subjectEditor');if(!sel)return;const current=sel.value;const names=allEditors();sel.innerHTML='<option value="">動画編集担当：全員</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(names.includes(current))sel.value=current;else sel.value=''}
+function renderEditorFilter(){const sel=$('subjectEditor');if(!sel)return;const current=sel.value;const names=allEditors();sel.innerHTML='<option value="">動画編集担当：すべて</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(names.includes(current))sel.value=current;else sel.value=''}
 function buildSubjectRows(){
  const today=todayStr();
  return allSubjects().map(name=>{
