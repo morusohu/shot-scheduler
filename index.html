@@ -28,7 +28,7 @@ a{color:inherit}
 .iconbtn{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex:none}
 .iconbtn:active{background:rgba(255,255,255,.28)}
 
-.statsstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 12px 0}
+.statsstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 12px 0}
 .statcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 6px;text-align:center}
 .statcard strong{display:block;font-size:18px;color:#9a3412;line-height:1.1}
 .statcard span{font-size:10px;color:var(--muted)}
@@ -176,7 +176,7 @@ textarea{min-height:76px;resize:vertical}
   border:0;box-shadow:0 10px 24px rgba(194,65,12,.35);display:flex;align-items:center;justify-content:center}
 .bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:#fff;border-top:1px solid #ffedd5;
   display:flex;justify-content:center;padding-bottom:var(--safe-bottom);box-shadow:0 -4px 16px rgba(124,45,18,.06)}
-.bottomnav-inner{max-width:520px;width:100%;display:grid;grid-template-columns:repeat(4,1fr)}
+.bottomnav-inner{max-width:520px;width:100%;display:grid;grid-template-columns:repeat(3,1fr)}
 .navbtn{background:none;border:0;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#a8a29e;min-height:56px}
 .navbtn .ic{font-size:19px}
 .navbtn .lb{font-size:10px;font-weight:700}
@@ -274,20 +274,6 @@ textarea{min-height:76px;resize:vertical}
       </div>
     </section>
 
-    <section id="listPanel" class="panel">
-      <div class="toolbar">
-        <input id="keyword" placeholder="案件・対象者・場所・担当で検索">
-      </div>
-      <div class="filterrow" style="margin-bottom:8px"><select id="listFederation" class="federationViewFilter" style="flex:1"><option value="">すべての県連</option><option>西県連</option><option>東県連</option><option>その他</option></select></div>
-      <div class="filterrow" style="margin-bottom:12px">
-        <select id="filterStatus"><option value="">全ステータス</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
-        <input type="date" id="filterDate" style="flex:1">
-        <button class="btn ghost" id="resetFilter" type="button">解除</button>
-      </div>
-      <div id="listCards"></div>
-      <div id="empty" class="empty">まだ撮影予定がありません。右下の＋から登録しましょう。</div>
-    </section>
-
     <section id="dailyPanel" class="panel">
       <div class="filterrow" style="margin-bottom:8px"><select id="dailyFederation" class="federationViewFilter" style="flex:1"><option value="">すべての県連</option><option>西県連</option><option>東県連</option><option>その他</option></select></div>
       <div class="daily-datebar">
@@ -322,7 +308,6 @@ textarea{min-height:76px;resize:vertical}
   <nav class="bottomnav">
     <div class="bottomnav-inner">
       <button class="navbtn active" data-tab="calendarPanel" type="button"><span class="ic">📅</span><span class="lb">カレンダー</span></button>
-      <button class="navbtn" data-tab="listPanel" type="button"><span class="ic">📋</span><span class="lb">一覧</span></button>
       <button class="navbtn" data-tab="dailyPanel" type="button"><span class="ic">🗓️</span><span class="lb">日別</span></button>
       <button class="navbtn" data-tab="progressPanel" type="button"><span class="ic">📈</span><span class="lb">進捗</span></button>
     </div>
@@ -356,7 +341,7 @@ textarea{min-height:76px;resize:vertical}
 
       <div class="form-section">
         <div class="form-section-title">👥 対象者・担当</div>
-        <label>撮影対象者</label>
+        <label>撮影対象者 *</label>
         <input type="hidden" id="subject">
         <div class="picker" id="subjectPicker">
           <div class="picker-chips" id="subjectChips"></div>
@@ -428,7 +413,7 @@ textarea{min-height:76px;resize:vertical}
         <div class="form-section-title">🗂️ その他</div>
         <label>調整さんURL</label>
         <input type="url" id="chouseisanUrl" placeholder="例：https://chouseisan.com/s?h=...">
-        <div class="hint">日程調整用の「調整さん」URLを貼ってください。一覧・日別画面から別タブで開けます</div>
+        <div class="hint">日程調整用の「調整さん」URLを貼ってください。日別画面から別タブで開けます</div>
         <label>撮影データの格納先リンク</label>
         <input type="url" id="storageLink" placeholder="例：Googleドライブのフォルダ URL">
         <div class="hint">撮影データ（写真・動画）を保存したGoogleドライブなどのURLを貼ってください</div>
@@ -745,16 +730,17 @@ function buildSubjectRows(){
  const today=todayStr();
  return allSubjects().map(name=>{
    const related=items.filter(x=>subjectNamesForItem(x).includes(name)).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
-   const latestStatus=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
+   const normalizedStatuses=related.map(x=>String(x.status||'撮影日程調整中').trim());
+   const latestStatus=normalizedStatuses.reduce((best,st)=>(statusOrder[st]??0)>(statusOrder[best]??0)?st:best,'撮影日程調整中');
    const next=related.find(x=>x.date && x.date>=today && statusOrder[x.status]<4);
    const editors=[...new Set(related.map(x=>(x.editor||'').trim()).filter(Boolean))];
    const federation=[...related].reverse().find(x=>x.federation)?.federation||'';
-   return {name,status:latestStatus,count:related.length,next:next?`${fmtDateJp(next.date)}${next.time?' '+next.time:''}`:'-',projects:[...new Set(related.map(x=>x.project))],editors,federation};
+   return {name,status:latestStatus,statuses:[...new Set(normalizedStatuses)],count:related.length,next:next?`${fmtDateJp(next.date)}${next.time?' '+next.time:''}`:'-',projects:[...new Set(related.map(x=>x.project))],editors,federation};
  })
 }
 function renderProgress(){
  const rows=buildSubjectRows(); const kw=$('subjectKeyword').value.trim().toLowerCase(),fs=$('subjectStatus').value,fe=$('subjectEditor').value,ff=$('subjectFederation').value;
- const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.status===fs)&&(!fe||r.editors.includes(fe))&&(!ff||r.federation===ff));
+ const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.statuses.includes(fs))&&(!fe||r.editors.includes(fe))&&(!ff||r.federation===ff));
 
  $('progressCards').innerHTML=filtered.map(r=>{const total=Object.keys(statusOrder).length;const pct=Math.round(100*((statusOrder[r.status]??0)+1)/total);return `
   <div class="progresscard" role="button" tabindex="0" onclick="openSubjectDetail('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectDetail('${esc(r.name)}')}">
@@ -852,7 +838,7 @@ function renderAll(){renderStats();renderList();renderPhotographerFilter();rende
 function clearForm(){['id','date','time','project','meetingPlace','owner','editor','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl'].forEach(k=>$(k).value='');$('status').value='撮影日程調整中';$('federation').value='';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');locationPicker.setSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
  const u=getLoginUser(); if(u&&!$('owner').value)$('owner').value=u;
 }
-$('form').addEventListener('submit',async e=>{e.preventDefault();subjectPicker.commitPending();participantsPicker.commitPending();locationPicker.commitPending();if(!$('subject').value.trim()){alert('撮影対象者を入力してください。');$('subjectInput').focus();return}const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim(),chouseisanUrl:$('chouseisanUrl').value.trim(),federation:$('federation').value};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
+$('form').addEventListener('submit',async e=>{e.preventDefault();subjectPicker.commitPending();participantsPicker.commitPending();locationPicker.commitPending();if(!$('subject').value.trim()){alert('撮影対象者を選択してください。');$('subjectInput').focus();return}const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim(),chouseisanUrl:$('chouseisanUrl').value.trim(),federation:$('federation').value};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
 function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','meetingPlace','owner','editor','status','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl','federation'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');locationPicker.setSelection(x.location||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
 async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}}}
 $('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)return;if(!confirm('この撮影予定を削除しますか？この操作は取り消せません。'))return;try{await deleteItem(id);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
@@ -887,6 +873,9 @@ $('routeMeetingMapBtn').addEventListener('click',()=>{
 function switchTab(tabId){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+  const panel=$(tabId);
+  const nav=document.querySelector(`.navbtn[data-tab="${tabId}"]`);
+  if(!panel||!nav){tabId='calendarPanel';}
   $(tabId).classList.add('active');
   document.querySelector(`.navbtn[data-tab="${tabId}"]`).classList.add('active');
   // 進捗タブでは撮影日程用の上段集計を隠す
