@@ -304,7 +304,7 @@ textarea{min-height:76px;resize:vertical}
         <input id="subjectKeyword" placeholder="対象者名で検索">
       </div>
       <div class="filterrow" style="margin-bottom:12px">
-        <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
+        <select id="subjectStatus" style="flex:1"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
         <select id="subjectEditor" style="flex:1"><option value="">編集担当者：全員</option></select>
       </div>
       <div class="filterrow" style="margin-bottom:12px">
@@ -340,7 +340,7 @@ textarea{min-height:76px;resize:vertical}
 
       <div class="form-section">
         <div class="form-section-title">📋 基本情報</div>
-        <div class="row-date"><div><label>撮影日 *</label><input type="date" id="date" required></div><div><label>時間</label><input type="time" id="time" step="300"></div></div>
+        <div class="row-date"><div><label>撮影日（任意）</label><input type="date" id="date"></div><div><label>時間</label><input type="time" id="time" step="300"></div></div>
         <label>案件名 *</label><input id="project" placeholder="例：候補者撮影" required>
         <label>ステータス</label><select id="status"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
       </div>
