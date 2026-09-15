@@ -788,9 +788,8 @@ function openSubjectDetail(name){
       ${externalLink(x.storageLink,'📁 撮影データを開く')}
       ${externalLink(x.publishedUrl,'🎬 公開動画を見る')}
       ${calendarLink(x,'shoot')}${x.meetingDate?calendarLink(x,'mtg'):''}
-      <button type="button" class="link" style="margin-top:9px" onclick="closeSheet($('subjectDetailSheet'));editItem('${x.id}')">この登録を編集</button>
    </div>`).join('')}
-   <button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));openSubjectProgress('${esc(name)}')">進捗を変更</button>`;
+   <button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));editItem('${x.id}')">詳細を編集</button>`;
  openSheet($('subjectDetailSheet'));
 }
 window.openSubjectDetail=openSubjectDetail;
