@@ -251,7 +251,7 @@ textarea{min-height:76px;resize:vertical}
 
   <div class="statsstrip" id="mainStatsStrip">
     <div class="statcard"><strong id="countAll">0</strong><span>全予定</span></div>
-    <div class="statcard"><strong id="countFixed">0</strong><span>確定</span></div>
+    <div class="statcard"><strong id="countFixed">0</strong><span>撮影確定</span></div>
     <div class="statcard"><strong id="countToday">0</strong><span>本日</span></div>
     <div class="statcard"><strong id="countSubjects">0</strong><span>対象者</span></div>
   </div>
@@ -586,7 +586,8 @@ function setTimeline(steps=[]){$('timelineEditor').innerHTML='';(steps.length?st
 async function saveItem(data){const exists=items.some(x=>x.id===data.id);const url=exists?API+'?id=eq.'+encodeURIComponent(data.id):API;const r=await fetch(url,{method:exists?'PATCH':'POST',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(toDb(data))});if(!r.ok)throw new Error(await r.text());await loadItems()}
 async function deleteItem(id){const r=await fetch(API+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:HEADERS});if(!r.ok)throw new Error(await r.text());await loadItems()}
 function todayStr(){return fmtDate(new Date())}
-function allSubjects(){return [...new Set(items.flatMap(x=>splitNames(x.subject)))].sort((a,b)=>a.localeCompare(b,'ja'))}
+function subjectNamesForItem(x){const names=splitNames(x.subject);if(names.length)return names;const p=String(x.project||'').trim();return p?[p]:[]}
+function allSubjects(){return [...new Set(items.flatMap(x=>subjectNamesForItem(x)))].sort((a,b)=>a.localeCompare(b,'ja'))}
 function allPhotographers(){return [...new Set(items.flatMap(x=>[...splitNames(x.participants),...(x.owner?[x.owner.trim()]:[])]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'))}
 function isPhotographerInItem(x,name){if(!name)return true;return splitNames(x.participants).includes(name)||(x.owner||'').trim()===name}
 function renderPhotographerFilter(){const sel=$('photographerFilter');if(!sel)return;const current=sel.value;const names=allPhotographers();sel.innerHTML='<option value="">全員の撮影予定</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(names.includes(current))sel.value=current;else sel.value=''}
@@ -621,7 +622,8 @@ function initMultiPicker({hiddenId,chipsId,inputId,suggestId,pickerId,candidates
   $(inputId).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();add($(inputId).value)}});
   $(pickerId).addEventListener('click',e=>{if(e.target===$(pickerId)||e.target===$(chipsId))$(inputId).focus()});
   document.addEventListener('click',e=>{if(!$(pickerId).contains(e.target))$(suggestId).innerHTML=''});
-  return {setSelection};
+  function commitPending(){const v=$(inputId).value.trim();if(v)add(v)}
+  return {setSelection,commitPending};
 }
 
 /* ---------- 候補選択ピッカー（単一選択：主担当・動画編集担当） ---------- */
@@ -655,9 +657,12 @@ initSinglePicker({inputId:'quickEditor',suggestId:'quickEditorSuggest',wrapId:'q
 
 function renderStats(){
   const scoped=items.filter(federationMatches);
-  $('countAll').textContent=scoped.filter(x=>x.date).length;
+  const today=todayStr();
+  const shootCount=scoped.filter(x=>x.date).length;
+  const mtgCount=scoped.filter(x=>x.meetingDate).length;
+  $('countAll').textContent=shootCount+mtgCount;
   $('countFixed').textContent=scoped.filter(x=>x.date&&x.status==='撮影日確定').length;
-  $('countToday').textContent=scoped.filter(x=>x.date===todayStr()).length;
+  $('countToday').textContent=scoped.filter(x=>x.date===today).length+scoped.filter(x=>x.meetingDate===today).length;
   $('countSubjects').textContent=[...new Set(scoped.flatMap(x=>splitNames(x.subject)))].length;
 }
 
@@ -739,7 +744,7 @@ function renderEditorFilter(){const sel=$('subjectEditor');if(!sel)return;const 
 function buildSubjectRows(){
  const today=todayStr();
  return allSubjects().map(name=>{
-   const related=items.filter(x=>splitNames(x.subject).includes(name)).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+   const related=items.filter(x=>subjectNamesForItem(x).includes(name)).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
    const latestStatus=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
    const next=related.find(x=>x.date && x.date>=today && statusOrder[x.status]<4);
    const editors=[...new Set(related.map(x=>(x.editor||'').trim()).filter(Boolean))];
@@ -776,7 +781,7 @@ function googleCalendarHref(x,kind='shoot'){
 }
 function calendarLink(x,kind='shoot'){const u=googleCalendarHref(x,kind);return u?`<a class="maplink" style="display:block;margin-top:7px;color:#1d4ed8;font-weight:800" href="${esc(u)}" target="_blank" rel="noopener">📅 Googleカレンダーに追加 ↗</a>`:''}
 function openSubjectDetail(name){
- const related=items.filter(x=>splitNames(x.subject).includes(name)).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
+ const related=items.filter(x=>subjectNamesForItem(x).includes(name)).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
  if(!related.length)return;
  subjectDetailName=name;
  const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
@@ -847,7 +852,7 @@ function renderAll(){renderStats();renderList();renderPhotographerFilter();rende
 function clearForm(){['id','date','time','project','meetingPlace','owner','editor','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl'].forEach(k=>$(k).value='');$('status').value='撮影日程調整中';$('federation').value='';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');locationPicker.setSelection('');$('saveBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
  const u=getLoginUser(); if(u&&!$('owner').value)$('owner').value=u;
 }
-$('form').addEventListener('submit',async e=>{e.preventDefault();const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim(),chouseisanUrl:$('chouseisanUrl').value.trim(),federation:$('federation').value};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
+$('form').addEventListener('submit',async e=>{e.preventDefault();subjectPicker.commitPending();participantsPicker.commitPending();locationPicker.commitPending();if(!$('subject').value.trim()){alert('撮影対象者を入力してください。');$('subjectInput').focus();return}const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim(),chouseisanUrl:$('chouseisanUrl').value.trim(),federation:$('federation').value};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
 function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','meetingPlace','owner','editor','status','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl','federation'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');locationPicker.setSelection(x.location||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
 async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}}}
 $('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)return;if(!confirm('この撮影予定を削除しますか？この操作は取り消せません。'))return;try{await deleteItem(id);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
