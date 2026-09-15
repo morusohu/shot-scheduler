@@ -108,7 +108,9 @@ textarea{min-height:76px;resize:vertical}
 .shootcard .chips{margin-bottom:8px}
 .shootcard-actions{display:flex;gap:14px;margin-top:6px;border-top:1px solid #ffedd5;padding-top:8px}
 
-.progresscard{background:#fff;border:1px solid #ffedd5;border-radius:14px;padding:13px;margin-bottom:10px;box-shadow:var(--shadow)}
+.progresscard{background:#fff;border:1px solid #ffedd5;border-radius:14px;padding:13px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer}
+.progresscard:active{background:#fff7ed}
+.progresscard-hint{font-size:10px;color:#c2410c;margin-top:7px;font-weight:800}
 .progresscard-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .progresscard-top b{font-size:15px}
 .bar{height:8px;border-radius:999px;background:#e7e5e4;overflow:hidden;margin:6px 0}
@@ -271,7 +273,7 @@ textarea{min-height:76px;resize:vertical}
         <input id="keyword" placeholder="案件・対象者・場所・担当で検索">
       </div>
       <div class="filterrow" style="margin-bottom:12px">
-        <select id="filterStatus"><option value="">全ステータス</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済み</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
+        <select id="filterStatus"><option value="">全ステータス</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
         <input type="date" id="filterDate" style="flex:1">
         <button class="btn ghost" id="resetFilter" type="button">解除</button>
       </div>
@@ -300,7 +302,7 @@ textarea{min-height:76px;resize:vertical}
         <input id="subjectKeyword" placeholder="対象者名で検索">
       </div>
       <div class="filterrow" style="margin-bottom:12px">
-        <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済み</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
+        <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
         <select id="subjectEditor" style="flex:1"><option value="">編集担当者：全員</option></select>
       </div>
       <div id="progressCards"></div>
@@ -335,7 +337,7 @@ textarea{min-height:76px;resize:vertical}
         <div class="form-section-title">📋 基本情報</div>
         <div class="row-date"><div><label>撮影日 *</label><input type="date" id="date" required></div><div><label>時間</label><input type="time" id="time" step="300"></div></div>
         <label>案件名 *</label><input id="project" placeholder="例：候補者撮影" required>
-        <label>ステータス</label><select id="status"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済み</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
+        <label>ステータス</label><select id="status"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
       </div>
 
       <div class="form-section">
@@ -445,7 +447,7 @@ textarea{min-height:76px;resize:vertical}
       <div class="suggest-list" id="quickSubjectSuggest"></div>
     </div>
     <label>ステータス</label>
-    <select id="quickStatus"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済み</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
+    <select id="quickStatus"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
     <label>編集担当者</label>
     <div class="autocomplete" id="quickEditorWrap">
       <input id="quickEditor" placeholder="例：鈴木" autocomplete="off">
@@ -501,16 +503,42 @@ const API=SUPABASE_URL+'/rest/v1/shooting_schedules';
 const HEADERS={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
 let items=[];
 const $=id=>document.getElementById(id);
-function fromDb(x){return {id:x.id,date:x.shoot_date,time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:x.status||'撮影日程調整中',gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:x.notes||'',storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||''}}
-function toDb(x){return {id:x.id,shoot_date:x.date,shoot_time:x.time||null,project_name:x.project,subjects:x.subject||null,location:x.location||null,meeting_place:x.meetingPlace||null,participants:x.participants||null,owner:x.owner||null,editor:x.editor||null,status:x.status,gear:x.gear||null,scenario:x.scenario||null,timeline:x.timeline||[],notes:x.notes||null,storage_link:x.storageLink||null,pre_meeting_date:x.meetingDate||null,pre_meeting_time:x.meetingTime||null,meeting_url:x.meetingUrl||null,published_url:x.publishedUrl||null}}
+function fromDb(x){return {id:x.id,date:x.shoot_date,time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:(x.status==='本部承認済み'?'本部承認済':(x.status||'撮影日程調整中')),gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:x.notes||'',storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||''}}
+function toDb(x){
+  const payload = {
+    id:x.id,
+    shoot_date:x.date,
+    shoot_time:x.time||null,
+    project_name:x.project,
+    subjects:x.subject||null,
+    location:x.location||null,
+    meeting_place:x.meetingPlace||null,
+    participants:x.participants||null,
+    owner:x.owner||null,
+    editor:x.editor||null,
+    status:x.status,
+    gear:x.gear||null,
+    scenario:x.scenario||null,
+    timeline:x.timeline||[],
+    notes:x.notes||null,
+    storage_link:x.storageLink||null,
+    pre_meeting_date:x.meetingDate||null,
+    pre_meeting_time:x.meetingTime||null,
+    published_url:x.publishedUrl||null
+  };
+  if (x.meetingUrl) {
+    payload.meeting_url = x.meetingUrl;
+  }
+  return payload;
+}
 async function loadItems(){try{const r=await fetch(API+'?select=*&order=shoot_date.asc,shoot_time.asc',{headers:HEADERS});if(!r.ok)throw new Error(await r.text());items=(await r.json()).map(fromDb);renderAll()}catch(e){console.error(e);alert('共有データの読み込みに失敗しました。\n\n【詳細】\n'+(e.message||e))}}
 let viewDate=new Date(); viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth(),1);
-const statusOrder={'撮影日程調整中':0,'撮影日確定':1,'撮影完了':2,'編集中':3,'本部承認済み':4,'動画データ受渡済（サムネ含む）':5,'Google広告運用中':6};
+const statusOrder={'撮影日程調整中':0,'撮影日確定':1,'撮影完了':2,'編集中':3,'本部承認済':4,'選管動画確認済':5,'動画データ受渡済（サムネ含む）':6,'Google広告運用中':7};
 function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function splitNames(s=''){return String(s).split(/[,、，;；\n]/).map(v=>v.trim()).filter(Boolean)}
 function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function fmtDateJp(ds){if(!ds)return '';const d=new Date(ds+'T00:00:00');const w=['日','月','火','水','木','金','土'][d.getDay()];return `${d.getMonth()+1}/${d.getDate()}(${w})`}
-function badge(s){return ({'撮影日程調整中':'b-adjust','撮影日確定':'b-fixed','撮影完了':'b-shot','編集中':'b-edit','本部承認済み':'b-approved','動画データ受渡済（サムネ含む）':'b-done','Google広告運用中':'b-ads'})[s]||'b-done'}
+function badge(s){return ({'撮影日程調整中':'b-adjust','撮影日確定':'b-fixed','撮影完了':'b-shot','編集中':'b-edit','本部承認済':'b-approved','選管動画確認済':'b-approved','動画データ受渡済（サムネ含む）':'b-done','Google広告運用中':'b-ads'})[s]||'b-done'}
 function chips(s){const a=splitNames(s);return a.length?`<div class="chips">${a.map(n=>`<span class="chip">${esc(n)}</span>`).join('')}</div>`:''}
 function mapHref(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place)}
 const SHOOT_TYPES=['メイン動画','本人ありBロール（エキストラ込み）','本人なし風景Bロール'];
@@ -672,13 +700,33 @@ function renderProgress(){
  const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.status===fs)&&(!fe||r.editors.includes(fe)));
  $('pSubjects').textContent=rows.length;$('pShot').textContent=rows.filter(r=>statusOrder[r.status]>=2).length;$('pComplete').textContent=rows.filter(r=>r.status==='Google広告運用中').length;
  $('progressCards').innerHTML=filtered.map(r=>{const total=Object.keys(statusOrder).length;const pct=Math.round(100*((statusOrder[r.status]??0)+1)/total);return `
-  <div class="progresscard">
+  <div class="progresscard" role="button" tabindex="0" onclick="openSubjectProgress('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectProgress('${esc(r.name)}')}">
     <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)}">${esc(r.status)}</span></div>
     <div class="bar"><span style="width:${pct}%"></span></div>
     <div class="progresscard-meta">${r.count}回撮影・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>編集担当：${esc(r.editors.join(' / '))}`:''}</div>
+    <div class="progresscard-hint">タップして進捗を変更</div>
   </div>`}).join('');
  $('progressEmpty').style.display=filtered.length?'none':'block';
 }
+
+async function openSubjectProgress(name){
+ const related=items.filter(x=>splitNames(x.subject).includes(name));
+ if(!related.length)return;
+ const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
+ const statuses=Object.keys(statusOrder);
+ const menu=statuses.map((st,i)=>`${i+1}. ${st}${st===current?'（現在）':''}`).join('\n');
+ const answer=prompt(`${name}さんの進捗を変更します。\n\n${menu}\n\n番号を入力してください。`, String(statuses.indexOf(current)+1));
+ if(answer===null)return;
+ const idx=Number(answer)-1;
+ if(!Number.isInteger(idx)||idx<0||idx>=statuses.length){alert('1〜'+statuses.length+'の番号を入力してください。');return}
+ const newStatus=statuses[idx];
+ if(newStatus===current)return;
+ if(!confirm(`${name}さんの進捗を「${newStatus}」に変更しますか？\n対象者が含まれる撮影データ ${related.length}件を更新します。`))return;
+ try{
+   for(const x of related){await saveItem({...x,status:newStatus})}
+ }catch(err){console.error(err);alert('進捗の更新に失敗しました。\n\n【詳細】\n'+(err.message||err))}
+}
+window.openSubjectProgress=openSubjectProgress;
 
 function renderAll(){renderStats();renderList();renderPhotographerFilter();renderEditorFilter();renderCalendar();renderDaily();renderProgress()}
 
@@ -775,7 +823,8 @@ $('shareLoginLink').addEventListener('click',async()=>{
 });
 $('lineShareLink').addEventListener('click',()=>{
   const url=$('loginLinkInput').value;const name=getLoginUser();
-  const text=encodeURIComponent(`${name}さんのログインリンク：${url}\n（初回アクセス時はパスワードの入力が必要です）`);
+  const text=encodeURIComponent(`${name}さんのログインリンク：${url}
+（初回アクセス時はパスワードの入力が必要です）`);
   window.open('https://line.me/R/msg/text/?'+text,'_blank','noopener');
 });
 $('saveProfileName').addEventListener('click',()=>{
