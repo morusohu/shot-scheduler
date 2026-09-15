@@ -524,9 +524,10 @@ let viewFederation='';
 const federationMatches=x=>!viewFederation||x.federation===viewFederation;
 const CHOUSEISAN_MARK='[調整さんURL]';
 const FEDERATION_MARK='[県連区分]';
-function parseMetaNotes(notes=''){const lines=String(notes||'').split('\n');const c=lines.find(v=>v.startsWith(CHOUSEISAN_MARK));const f=lines.find(v=>v.startsWith(FEDERATION_MARK));return {url:c?c.slice(CHOUSEISAN_MARK.length).trim():'',federation:f?f.slice(FEDERATION_MARK.length).trim():'',notes:lines.filter(v=>!v.startsWith(CHOUSEISAN_MARK)&&!v.startsWith(FEDERATION_MARK)).join('\n').trim()}}
-function packNotes(notes='',url='',federation=''){const base=String(notes||'').trim();const c=url?CHOUSEISAN_MARK+url.trim():'';const f=federation?FEDERATION_MARK+federation.trim():'';return [base,c,f].filter(Boolean).join('\n')}
-function fromDb(x){const pn=parseMetaNotes(x.notes||'');return {id:x.id,date:x.shoot_date||'',time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:(x.status==='本部承認済み'?'本部承認済':(x.status||'撮影日程調整中')),gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:pn.notes,chouseisanUrl:pn.url,federation:pn.federation,storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||''}}
+const FINAL_STATUS_MARK='[完了ステータス]';
+function parseMetaNotes(notes=''){const lines=String(notes||'').split('\n');const c=lines.find(v=>v.startsWith(CHOUSEISAN_MARK));const f=lines.find(v=>v.startsWith(FEDERATION_MARK));const g=lines.find(v=>v.startsWith(FINAL_STATUS_MARK));return {url:c?c.slice(CHOUSEISAN_MARK.length).trim():'',federation:f?f.slice(FEDERATION_MARK.length).trim():'',finalStatus:g?g.slice(FINAL_STATUS_MARK.length).trim():'',notes:lines.filter(v=>!v.startsWith(CHOUSEISAN_MARK)&&!v.startsWith(FEDERATION_MARK)&&!v.startsWith(FINAL_STATUS_MARK)).join('\n').trim()}}
+function packNotes(notes='',url='',federation='',finalStatus=''){const base=String(notes||'').trim();const c=url?CHOUSEISAN_MARK+url.trim():'';const f=federation?FEDERATION_MARK+federation.trim():'';const g=finalStatus?FINAL_STATUS_MARK+finalStatus.trim():'';return [base,c,f,g].filter(Boolean).join('\n')}
+function fromDb(x){const pn=parseMetaNotes(x.notes||'');return {id:x.id,date:x.shoot_date||'',time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:(x.status==='本部承認済み'?'本部承認済':(x.status||'撮影日程調整中')),gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:pn.notes,chouseisanUrl:pn.url,federation:pn.federation,storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||'',finalStatus:pn.finalStatus||''}}
 function toDb(x){
   const payload = {
     id:x.id,
@@ -543,7 +544,7 @@ function toDb(x){
     gear:x.gear||null,
     scenario:x.scenario||null,
     timeline:x.timeline||[],
-    notes:packNotes(x.notes,x.chouseisanUrl,x.federation)||null,
+    notes:packNotes(x.notes,x.chouseisanUrl,x.federation,x.finalStatus)||null,
     storage_link:x.storageLink||null,
     pre_meeting_date:x.meetingDate||null,
     pre_meeting_time:x.meetingTime||null,
@@ -735,18 +736,19 @@ function buildSubjectRows(){
    const next=related.find(x=>x.date && x.date>=today && statusOrder[x.status]<4);
    const editors=[...new Set(related.map(x=>(x.editor||'').trim()).filter(Boolean))];
    const federation=[...related].reverse().find(x=>x.federation)?.federation||'';
-   return {name,status:latestStatus,statuses:[...new Set(normalizedStatuses)],count:related.length,next:next?`${fmtDateJp(next.date)}${next.time?' '+next.time:''}`:'-',projects:[...new Set(related.map(x=>x.project))],editors,federation};
+   const finalStatus=[...related].reverse().find(x=>x.finalStatus)?.finalStatus||'Google広告運用中';
+   return {name,status:latestStatus,finalStatus,statuses:[...new Set(normalizedStatuses)],count:related.length,next:next?`${fmtDateJp(next.date)}${next.time?' '+next.time:''}`:'-',projects:[...new Set(related.map(x=>x.project))],editors,federation};
  })
 }
 function renderProgress(){
  const rows=buildSubjectRows(); const kw=$('subjectKeyword').value.trim().toLowerCase(),fs=$('subjectStatus').value,fe=$('subjectEditor').value,ff=$('subjectFederation').value;
  const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.statuses.includes(fs))&&(!fe||r.editors.includes(fe))&&(!ff||r.federation===ff));
 
- $('progressCards').innerHTML=filtered.map(r=>{const total=Object.keys(statusOrder).length;const pct=Math.round(100*((statusOrder[r.status]??0)+1)/total);return `
+ $('progressCards').innerHTML=filtered.map(r=>{const finalIdx=statusOrder[r.finalStatus]??7;const currentIdx=statusOrder[r.status]??0;const pct=Math.min(100,Math.round(100*(currentIdx+1)/(finalIdx+1)));const complete=currentIdx>=finalIdx;return `
   <div class="progresscard" role="button" tabindex="0" onclick="openSubjectDetail('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectDetail('${esc(r.name)}')}">
     <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)}">${esc(r.status)}</span></div>
     <div class="bar"><span style="width:${pct}%"></span></div>
-    <div class="progresscard-meta">${r.federation?`<span class="chip" style="margin-bottom:5px">${esc(r.federation)}</span><br>`:''}${r.count}件・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>動画編集担当：${esc(r.editors.join(' / '))}`:''}</div>
+    <div class="progresscard-meta">${complete?`<b style="color:#b45309">✓ 完了</b>（完了地点：${esc(r.finalStatus)}）<br>`:`完了地点：${esc(r.finalStatus)}<br>`}${r.federation?`<span class="chip" style="margin-bottom:5px">${esc(r.federation)}</span><br>`:''}${r.count}件・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>動画編集担当：${esc(r.editors.join(' / '))}`:''}</div>
     <div class="progresscard-hint">タップして詳細を表示</div>
     <div class="progress-actions"><button type="button" class="progress-detail-btn" onclick="event.stopPropagation();openSubjectDetail('${esc(r.name)}')">詳細を見る</button><button type="button" class="progress-change-btn" onclick="event.stopPropagation();openSubjectProgress('${esc(r.name)}')">進捗を変更</button></div>
   </div>`}).join('');
@@ -810,15 +812,33 @@ function openSubjectProgress(name){
  progressChangeSubject=name;
  const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'撮影日程調整中');
  $('progressChangeTitle').textContent=name+'さんの進捗を変更';
- $('progressStatusChoices').innerHTML=Object.keys(statusOrder).map(st=>`
+ const finalStatus=[...related].reverse().find(x=>x.finalStatus)?.finalStatus||'Google広告運用中';
+ $('progressStatusChoices').innerHTML=`<div style="margin-bottom:16px;padding:12px;border:1px solid #f0c48a;border-radius:14px;background:#fffaf3"><label style="margin:0 0 7px;display:block;font-weight:800">この人の完了地点</label><div class="hint" style="margin-bottom:8px">ここに到達したら進捗を100％・完了として表示します。</div><select id="subjectFinalStatus" style="width:100%;margin-bottom:8px">${Object.keys(statusOrder).map(st=>`<option ${st===finalStatus?'selected':''}>${esc(st)}</option>`).join('')}</select><button type="button" class="btn ghost full" id="saveSubjectFinalStatus">完了地点を保存</button></div>`+Object.keys(statusOrder).map(st=>`
    <button type="button" class="status-choice ${st===current?'current':''}" data-status="${esc(st)}">
      <span class="check">${st===current?'✓':'○'}</span>
      <span class="status-label">${esc(st)}</span>
      ${st===current?'<span class="current-label">現在</span>':''}
    </button>`).join('');
  $('progressStatusChoices').querySelectorAll('.status-choice').forEach(btn=>btn.addEventListener('click',()=>changeSubjectProgress(btn.dataset.status)));
+ $('saveSubjectFinalStatus').addEventListener('click',()=>setSubjectFinalStatus($('subjectFinalStatus').value));
  openSheet($('progressChangeSheet'));
 }
+async function setSubjectFinalStatus(finalStatus){
+ const name=progressChangeSubject;
+ const related=items.filter(x=>splitNames(x.subject).includes(name));
+ if(!related.length)return;
+ try{
+   for(const x of related){
+     const url=API+'?id=eq.'+encodeURIComponent(x.id);
+     const notes=packNotes(x.notes,x.chouseisanUrl,x.federation,finalStatus)||null;
+     const rr=await fetch(url,{method:'PATCH',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({notes})});
+     if(!rr.ok)throw new Error(await rr.text());
+   }
+   closeSheet($('progressChangeSheet'));
+   await loadItems();
+ }catch(err){console.error(err);alert('完了地点の保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}
+}
+
 async function changeSubjectProgress(newStatus){
  const name=progressChangeSubject;
  const related=items.filter(x=>splitNames(x.subject).includes(name));
