@@ -138,7 +138,7 @@ textarea{min-height:76px;resize:vertical}
 .daily-shoot{border:1px solid #fed7aa;border-radius:14px;padding:13px;margin-bottom:12px;background:#fff}
 .daily-shoot h3{margin:0 0 5px;color:#9a3412;font-size:16px}
 .daily-meta{font-size:16px;font-weight:800;color:#57534e;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:7px 14px;line-height:1.45}
-.daily-meta .daily-datetime{font-size:18px;font-weight:900;color:#44403c}
+.daily-meta .daily-datetime{font-size:21px;font-weight:900;color:#292524;line-height:1.35;letter-spacing:.01em}
 .daily-timeline{border-left:3px solid #fb923c;margin-left:6px;padding-left:14px}
 .daily-step{position:relative;display:grid;grid-template-columns:64px 1fr;gap:8px;padding:6px 0}
 .daily-step:before{content:'';position:absolute;left:-20px;top:12px;width:9px;height:9px;border-radius:50%;background:#f97316}
@@ -479,6 +479,13 @@ textarea{min-height:76px;resize:vertical}
 
 
 
+<!-- ============ SCHEDULE VIEW SHEET ============ -->
+<div class="sheet" id="scheduleViewSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><h2 id="scheduleViewTitle">予定を見る</h2><button class="closebtn" id="closeScheduleView" type="button">×</button></div>
+  <div class="sheet-body" id="scheduleViewBody"></div>
+</div>
+
 <!-- ============ SUBJECT DETAIL SHEET ============ -->
 <div class="sheet" id="subjectDetailSheet">
   <div class="sheet-handle"></div>
@@ -768,9 +775,9 @@ function renderDaily(){
    const x=ev.x;
    const currentStatus=currentProgressForItem(x);
    const shootDone=(statusOrder[currentStatus]??0)>=(statusOrder['撮影完了']??2);
-   if(ev.kind==='mtg') return `<div class="daily-meeting"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px"><span class="status-badge" style="font-size:14px;font-weight:900">${esc(currentStatus)}</span></div><h3 style="margin:0 0 8px">${esc(x.project)}</h3>${x.subject?`<div class="small" style="margin-bottom:10px">👤 ${esc(x.subject)}</div>`:''}<div style="font-weight:900;color:#1d4ed8;margin:4px 0 6px">${shootDone?'✓ 撮影前MTG完了':'次の予定：💬 撮影前MTG'}</div><div class="daily-meta"><span class="daily-datetime">📅 ${esc(fmtDateJp(x.meetingDate))}</span><span class="daily-datetime">🕒 ${esc(x.meetingTime||'時間未設定')}</span>${x.owner?`<span>主担当：${esc(x.owner)}</span>`:''}</div>${x.meetingUrl?`<a class="btn primary" style="display:flex;margin-top:10px;text-decoration:none;min-height:44px;padding:10px 14px" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🎥 MTGに参加 ↗</a>`:''}<div style="margin-top:8px">${calendarLink(x,'mtg')}</div><div style="margin-top:10px"><button class="btn ghost" style="min-height:40px;padding:8px 14px" onclick="editItem('${x.id}')">予定を編集</button></div></div>`;
+   if(ev.kind==='mtg') return `<div class="daily-meeting"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px"><span class="status-badge" style="font-size:14px;font-weight:900">${esc(currentStatus)}</span></div><h3 style="margin:0 0 8px">${esc(x.project)}</h3>${x.subject?`<div class="small" style="margin-bottom:10px">👤 ${esc(x.subject)}</div>`:''}<div style="font-weight:900;color:#1d4ed8;margin:4px 0 6px">${shootDone?'✓ 撮影前MTG完了':'次の予定：💬 撮影前MTG'}</div><div class="daily-meta"><span class="daily-datetime">📅 ${esc(fmtDateJp(x.meetingDate))}</span><span class="daily-datetime">🕒 ${esc(x.meetingTime||'時間未設定')}</span>${x.owner?`<span>主担当：${esc(x.owner)}</span>`:''}</div>${x.meetingUrl?`<a class="btn primary" style="display:flex;margin-top:10px;text-decoration:none;min-height:44px;padding:10px 14px" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🎥 MTGに参加 ↗</a>`:''}<div style="margin-top:8px">${calendarLink(x,'mtg')}</div><div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn ghost" style="min-height:40px;padding:8px 10px" onclick="viewSchedule('${x.id}')">予定を見る</button><button class="btn ghost" style="min-height:40px;padding:8px 10px" onclick="editItem('${x.id}')">予定を編集</button></div></div>`;
    const steps=(x.timeline||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    return `<div class="daily-shoot"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px"><span class="status-badge" style="font-size:14px;font-weight:900">${esc(currentStatus)}</span></div><h3 style="margin:0 0 8px">🎥 ${esc(x.project)}</h3>${x.subject?`<div class="small" style="margin-bottom:10px">👤 ${esc(x.subject)}</div>`:''}<div style="font-weight:900;color:#c2410c;margin:4px 0 6px">${shootDone?'✓ 撮影完了':'次の予定：撮影'}</div><div class="daily-meta"><span class="daily-datetime">📅 ${esc(fmtDateJp(x.date))}</span><span class="daily-datetime">🕒 ${esc(x.time||'時間未設定')}</span><span>📍 ${esc(x.location||'場所未設定')}</span></div>${calendarLink(x,'shoot')}<div style="margin-top:10px"><button class="btn ghost" style="min-height:40px;padding:8px 14px" onclick="editItem('${x.id}')">予定を編集</button></div></div>`;
+    return `<div class="daily-shoot"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px"><span class="status-badge" style="font-size:14px;font-weight:900">${esc(currentStatus)}</span></div><h3 style="margin:0 0 8px">🎥 ${esc(x.project)}</h3>${x.subject?`<div class="small" style="margin-bottom:10px">👤 ${esc(x.subject)}</div>`:''}<div style="font-weight:900;color:#c2410c;margin:4px 0 6px">${shootDone?'✓ 撮影完了':'次の予定：撮影'}</div><div class="daily-meta"><span class="daily-datetime">📅 ${esc(fmtDateJp(x.date))}</span><span class="daily-datetime">🕒 ${esc(x.time||'時間未設定')}</span><span>📍 ${esc(x.location||'場所未設定')}</span></div>${calendarLink(x,'shoot')}<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn ghost" style="min-height:40px;padding:8px 10px" onclick="viewSchedule('${x.id}')">予定を見る</button><button class="btn ghost" style="min-height:40px;padding:8px 10px" onclick="editItem('${x.id}')">予定を編集</button></div></div>`;
  };
  $('dailySchedule').innerHTML=groups.map(g=>`${dates.length>1?`<div class="daily-group-title">${fmtDateJp(g.date)}</div>`:''}${g.events.map(eventHtml).join('')}`).join('');
 }
@@ -922,6 +929,25 @@ function clearForm(){['id','date','time','project','meetingPlace','owner','edito
 }
 $('saveTopBtn').addEventListener('click',()=>$('form').requestSubmit());
 $('form').addEventListener('submit',async e=>{e.preventDefault();subjectPicker.commitPending();participantsPicker.commitPending();locationPicker.commitPending();if(!$('subject').value.trim()){alert('撮影対象者を選択してください。');$('subjectInput').focus();return}const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:$('gear').value.trim(),scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim(),chouseisanUrl:$('chouseisanUrl').value.trim(),federation:$('federation').value};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
+function viewSchedule(id){
+ const x=items.find(v=>v.id===id);if(!x)return;
+ const val=v=>v?esc(v):'<span class="small">未設定</span>';
+ const link=(url,label)=>url?`<a href="${esc(url)}" target="_blank" rel="noopener" style="font-weight:800">${label} ↗</a>`:'<span class="small">未設定</span>';
+ const timeline=(x.timeline||[]).length?(x.timeline||[]).map(t=>`<div style="padding:7px 0;border-bottom:1px solid #eee"><b>${esc(t.time||'--:--')}</b>　${esc(t.title||t.label||'')}</div>`).join(''):'<span class="small">未設定</span>';
+ $('scheduleViewTitle').textContent='予定を見る';
+ $('scheduleViewBody').innerHTML=`
+   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px"><div><h3 style="margin:0 0 6px">${esc(x.project||'予定')}</h3><div>${x.subject?'👤 '+esc(x.subject):''}</div></div><span class="status-badge">${esc(currentProgressForItem(x))}</span></div>
+   <div class="card" style="padding:14px;margin-bottom:12px"><b>🎥 撮影予定</b><div style="margin-top:8px">📅 ${val(fmtDateJp(x.date))}　🕒 ${val(x.time)}</div><div style="margin-top:6px">📍 ${val(x.location)}</div><div style="margin-top:6px">主担当：${val(x.owner)}　／　編集：${val(x.editor)}</div></div>
+   <div class="card" style="padding:14px;margin-bottom:12px"><b>💬 事前打ち合わせ</b><div style="margin-top:8px">📅 ${val(fmtDateJp(x.meetingDate))}　🕒 ${val(x.meetingTime)}</div><div style="margin-top:6px">場所：${val(x.meetingPlace)}</div><div style="margin-top:8px">${link(x.meetingUrl,'ミーティングURLを開く')}</div></div>
+   <div class="card" style="padding:14px;margin-bottom:12px"><b>📝 詳細スケジュール</b><div style="margin-top:6px">${timeline}</div></div>
+   ${x.scenario?`<div class="card" style="padding:14px;margin-bottom:12px"><b>台本・内容</b><div style="margin-top:6px;white-space:pre-wrap">${esc(x.scenario)}</div></div>`:''}
+   ${x.notes?`<div class="card" style="padding:14px;margin-bottom:12px"><b>メモ</b><div style="margin-top:6px;white-space:pre-wrap">${esc(x.notes)}</div></div>`:''}
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"><div>${link(x.storageLink,'撮影データ')}</div><div>${link(x.publishedUrl,'公開動画')}</div></div>
+   <button type="button" class="btn primary full" onclick="closeSheet($('scheduleViewSheet'));editItem('${x.id}')">この予定を編集</button>`;
+ openSheet($('scheduleViewSheet'));
+}
+window.viewSchedule=viewSchedule;
+
 function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','meetingPlace','owner','editor','status','gear','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl','federation'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');locationPicker.setSelection(x.location||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('saveTopBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
 async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}}}
 $('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)return;if(!confirm('この撮影予定を削除しますか？この操作は取り消せません。'))return;try{await deleteItem(id);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
@@ -976,6 +1002,7 @@ $('quickAddBtn').addEventListener('click',()=>{clearQuickForm();openSheet($('qui
 $('closeQuick').addEventListener('click',()=>closeSheet($('quickSheet')));
 $('closeProgressChange').addEventListener('click',()=>closeSheet($('progressChangeSheet')));
 $('closeSubjectDetail').addEventListener('click',()=>closeSheet($('subjectDetailSheet')));
+$('closeScheduleView').addEventListener('click',()=>closeSheet($('scheduleViewSheet')));
 $('quickSaveTopBtn').addEventListener('click',()=>$('quickSaveBtn').click());
 $('quickSaveBtn').addEventListener('click',async()=>{
   const project=$('quickProject').value.trim();
@@ -988,7 +1015,7 @@ $('quickSaveBtn').addEventListener('click',async()=>{
 $('closeForm').addEventListener('click',()=>closeSheet($('formSheet')));
 $('menuBtn').addEventListener('click',()=>{fillProfileSheet();openSheet($('profileSheet'))});
 $('closeProfile').addEventListener('click',()=>closeSheet($('profileSheet')));
-$('sheetOverlay').addEventListener('click',()=>{closeSheet($('formSheet'));closeSheet($('profileSheet'));closeSheet($('quickSheet'));closeSheet($('progressChangeSheet'))});
+$('sheetOverlay').addEventListener('click',()=>{closeSheet($('formSheet'));closeSheet($('profileSheet'));closeSheet($('quickSheet'));closeSheet($('progressChangeSheet'));closeSheet($('scheduleViewSheet'))});
 
 /* ===================== ログイン & ログインリンク ===================== */
 const LOGIN_KEY='shoot_app_login_user';
