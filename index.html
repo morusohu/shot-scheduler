@@ -288,8 +288,7 @@ textarea{min-height:76px;resize:vertical}
         <button type="button" data-range="nextweek">来週</button>
       </div>
       <div class="daily-datebar">
-        <input type="date" id="dailyDate">
-        <button type="button" class="btn ghost" id="dailyToday">日付指定</button>
+        <input type="date" id="dailyDate" aria-label="日付を選択">
       </div>
       <div class="small" id="dailyCount" style="margin-bottom:10px"></div>
       <div id="dailySchedule"></div>
@@ -919,7 +918,6 @@ $('addTimelineBtn').onclick=()=>addTimelineRow();
 document.querySelectorAll('.federationViewFilter').forEach(sel=>sel.addEventListener('change',()=>{viewFederation=sel.value;document.querySelectorAll('.federationViewFilter').forEach(other=>other.value=viewFederation);renderStats();renderCalendar();renderDaily();renderProgress();}));
 $('photographerFilter').addEventListener('change',renderCalendar);
 $('dailyDate').addEventListener('change',()=>{dailyRange='today';renderDaily()});
-$('dailyToday').onclick=()=>{dailyRange='today';renderDaily()};
 document.querySelectorAll('#dailyQuickbar button').forEach(btn=>btn.onclick=()=>{dailyRange=btn.dataset.range;if(dailyRange==='today')$('dailyDate').value=todayStr();if(dailyRange==='tomorrow')$('dailyDate').value=addDays(todayStr(),1);renderDaily()});
 $('prevMonth').onclick=()=>{viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth()-1,1);renderCalendar()};
 $('nextMonth').onclick=()=>{viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth()+1,1);renderCalendar()};
