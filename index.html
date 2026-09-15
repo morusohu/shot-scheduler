@@ -246,7 +246,7 @@ textarea{min-height:76px;resize:vertical}
     <button class="iconbtn" id="menuBtn" type="button" aria-label="マイページ">👤</button>
   </header>
 
-  <div class="statsstrip">
+  <div class="statsstrip" id="mainStatsStrip">
     <div class="statcard"><strong id="countAll">0</strong><span>全予定</span></div>
     <div class="statcard"><strong id="countFixed">0</strong><span>確定</span></div>
     <div class="statcard"><strong id="countToday">0</strong><span>本日</span></div>
@@ -304,8 +304,8 @@ textarea{min-height:76px;resize:vertical}
         <input id="subjectKeyword" placeholder="対象者名で検索">
       </div>
       <div class="filterrow" style="margin-bottom:12px">
-        <select id="subjectStatus" style="flex:1"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
-        <select id="subjectEditor" style="flex:1"><option value="">編集担当者：全員</option></select>
+        <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
+        <select id="subjectEditor" style="flex:1"><option value="">動画編集担当：全員</option></select>
       </div>
       <div class="filterrow" style="margin-bottom:12px">
         <select id="subjectFederation" style="flex:1"><option value="">全県連</option><option>西県連</option><option>東県連</option><option>その他</option></select>
@@ -382,7 +382,7 @@ textarea{min-height:76px;resize:vertical}
             </div>
           </div>
           <div>
-            <label>編集担当者</label>
+            <label>動画編集担当</label>
             <div class="autocomplete" id="editorWrap">
               <input id="editor" placeholder="例：鈴木" autocomplete="off">
               <div class="suggest-list" id="editorSuggest"></div>
@@ -431,8 +431,8 @@ textarea{min-height:76px;resize:vertical}
         <label>撮影データの格納先リンク</label>
         <input type="url" id="storageLink" placeholder="例：Googleドライブのフォルダ URL">
         <div class="hint">撮影データ（写真・動画）を保存したGoogleドライブなどのURLを貼ってください</div>
-        <label>編集動画の公開先URL</label>
-        <input type="url" id="publishedUrl" placeholder="例：YouTube/広告managerの公開リンク">
+        <label>公開動画URL</label>
+        <input type="url" id="publishedUrl" placeholder="例：YouTubeの公開URL">
         <div class="hint">編集が完了した動画の公開先・掲載先のURLを貼ってください</div>
         <label>備考</label><textarea id="notes" placeholder="必要物、衣装、注意事項など"></textarea>
       </div>
@@ -460,15 +460,15 @@ textarea{min-height:76px;resize:vertical}
     <select id="quickFederation"><option value="">未選択</option><option>西県連</option><option>東県連</option><option>その他</option></select>
     <label>ステータス</label>
     <select id="quickStatus"><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>本部承認済</option><option>選管動画確認済</option><option>動画データ受渡済（サムネ含む）</option><option>Google広告運用中</option></select>
-    <label>編集担当者</label>
+    <label>動画編集担当</label>
     <div class="autocomplete" id="quickEditorWrap">
       <input id="quickEditor" placeholder="例：鈴木" autocomplete="off">
       <div class="suggest-list" id="quickEditorSuggest"></div>
     </div>
     <label>撮影データの格納先リンク</label>
     <input type="url" id="quickStorageLink" placeholder="例：Googleドライブのフォルダ URL">
-    <label>編集動画の公開先URL</label>
-    <input type="url" id="quickPublishedUrl" placeholder="例：YouTube/広告managerの公開リンク">
+    <label>公開動画URL</label>
+    <input type="url" id="quickPublishedUrl" placeholder="例：YouTubeの公開URL">
     <div class="actions"><button class="btn primary full" id="quickSaveBtn" type="button">登録する</button></div>
   </div>
 </div>
@@ -613,7 +613,7 @@ function initMultiPicker({hiddenId,chipsId,inputId,suggestId,pickerId,candidates
   return {setSelection};
 }
 
-/* ---------- 候補選択ピッカー（単一選択：主担当・編集担当者） ---------- */
+/* ---------- 候補選択ピッカー（単一選択：主担当・動画編集担当） ---------- */
 function initSinglePicker({inputId,suggestId,wrapId,candidatesFn,emptyLabel}){
   function renderSuggest(){
     const kw=$(inputId).value.trim().toLowerCase();
@@ -638,9 +638,9 @@ const participantsPicker=initMultiPicker({hiddenId:'participants',chipsId:'parti
 function allLocations(){return [...new Set(items.flatMap(x=>splitNames(x.location)))].sort((a,b)=>a.localeCompare(b,'ja'))}
 const locationPicker=initMultiPicker({hiddenId:'location',chipsId:'locationChips',inputId:'locationInput',suggestId:'locationSuggest',pickerId:'locationPicker',candidatesFn:allLocations,emptyLabel:'登録済みの撮影場所がまだありません。場所を入力すると新規追加できます。'});
 initSinglePicker({inputId:'owner',suggestId:'ownerSuggest',wrapId:'ownerWrap',candidatesFn:allOwners,emptyLabel:'登録済みの主担当がまだありません。名前を入力すると新規登録できます。'});
-initSinglePicker({inputId:'editor',suggestId:'editorSuggest',wrapId:'editorWrap',candidatesFn:allEditors,emptyLabel:'登録済みの編集担当者がまだありません。名前を入力すると新規登録できます。'});
+initSinglePicker({inputId:'editor',suggestId:'editorSuggest',wrapId:'editorWrap',candidatesFn:allEditors,emptyLabel:'登録済みの動画編集担当がまだありません。名前を入力すると新規登録できます。'});
 initSinglePicker({inputId:'quickSubject',suggestId:'quickSubjectSuggest',wrapId:'quickSubjectWrap',candidatesFn:allSubjects,emptyLabel:'登録済みの対象者がまだありません。名前を入力すると新規登録できます。'});
-initSinglePicker({inputId:'quickEditor',suggestId:'quickEditorSuggest',wrapId:'quickEditorWrap',candidatesFn:allEditors,emptyLabel:'登録済みの編集担当者がまだありません。名前を入力すると新規登録できます。'});
+initSinglePicker({inputId:'quickEditor',suggestId:'quickEditorSuggest',wrapId:'quickEditorWrap',candidatesFn:allEditors,emptyLabel:'登録済みの動画編集担当がまだありません。名前を入力すると新規登録できます。'});
 
 function renderStats(){
   $('countAll').textContent=items.filter(x=>x.date).length;
@@ -668,8 +668,8 @@ function renderList(){
     </div>
     ${chips(x.subject)}
     ${(x.meetingDate||x.meetingUrl)?`<div style="margin-bottom:6px;font-size:12px;color:var(--muted)">🗓️ 打ち合わせ：${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">参加する</a>`:''}</div>`:''}
-    ${x.chouseisanUrl?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a></div>`:''}\n    ${x.storageLink?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを見る</a></div>`:''}
-    ${x.publishedUrl?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る</a></div>`:''}
+    ${x.chouseisanUrl?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a></div>`:''}\n    ${x.storageLink?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを開く ↗</a></div>`:''}
+    ${x.publishedUrl?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る ↗</a></div>`:''}
     <div class="shootcard-actions">
       <button class="link" onclick="editItem('${x.id}')">編集</button>
       <button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button>
@@ -705,13 +705,13 @@ function renderDaily(){
  $('dailyEmpty').style.display=dayItems.length?'none':'block';
  $('dailySchedule').innerHTML=dayItems.map(x=>{
    const steps=(x.timeline||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${(x.meetingDate||x.meetingUrl)?`<div class="sectionlabel">事前打ち合わせ</div><div class="small">${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加</a>`:''}</div>`:''}${x.chouseisanUrl?`<div class="sectionlabel">日程調整</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 格納先を開く</a>`:''}${x.publishedUrl?`<div class="sectionlabel">公開動画</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開先を開く</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px">📍 ${esc(st.location)}</div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
+   return `<div class="daily-shoot"><h3>${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>動画編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${(x.meetingDate||x.meetingUrl)?`<div class="sectionlabel">事前打ち合わせ</div><div class="small">${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加</a>`:''}</div>`:''}${x.chouseisanUrl?`<div class="sectionlabel">日程調整</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを開く ↗</a>`:''}${x.publishedUrl?`<div class="sectionlabel">公開動画</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る ↗</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px"><a class="maplink" style="color:inherit;font-weight:800" href="${mapHref(st.location)}" target="_blank" rel="noopener">📍 ${esc(st.location)} ↗</a></div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`
  }).join('');
 }
 
 /* ---------- progress (card layout) ---------- */
 function allEditors(){return [...new Set(items.map(x=>(x.editor||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'))}
-function renderEditorFilter(){const sel=$('subjectEditor');if(!sel)return;const current=sel.value;const names=allEditors();sel.innerHTML='<option value="">編集担当者：全員</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(names.includes(current))sel.value=current;else sel.value=''}
+function renderEditorFilter(){const sel=$('subjectEditor');if(!sel)return;const current=sel.value;const names=allEditors();sel.innerHTML='<option value="">動画編集担当：全員</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(names.includes(current))sel.value=current;else sel.value=''}
 function buildSubjectRows(){
  const today=todayStr();
  return allSubjects().map(name=>{
@@ -816,6 +816,9 @@ function switchTab(tabId){
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
   $(tabId).classList.add('active');
   document.querySelector(`.navbtn[data-tab="${tabId}"]`).classList.add('active');
+  // 進捗タブでは撮影日程用の上段集計を隠す
+  const statsStrip=$('mainStatsStrip');
+  if(statsStrip) statsStrip.style.display=tabId==='progressPanel'?'none':'grid';
   window.scrollTo({top:0,behavior:'instant'in window?'instant':'auto'});
 }
 window.switchTab=switchTab;
