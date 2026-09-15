@@ -820,7 +820,7 @@ function googleCalendarHref(x,kind='shoot'){
  const location=isMtg?'':(x.location||x.meetingPlace||'');
  const q=new URLSearchParams({action:'TEMPLATE',text:title,dates:`${start}/${end}`,details,location});return 'https://calendar.google.com/calendar/render?'+q.toString();
 }
-function calendarLink(x,kind='shoot'){const u=googleCalendarHref(x,kind);return u?`<a class="maplink" style="display:block;margin-top:7px;color:#1d4ed8;font-weight:800" href="${esc(u)}" target="_blank" rel="noopener">📅 Googleカレンダーに追加 ↗</a>`:''}
+function calendarLink(x,kind='shoot'){const u=googleCalendarHref(x,kind);if(!u)return '';const label=kind==='mtg'?'💬 MTGをGoogleカレンダーに追加 ↗':'🎥 撮影をGoogleカレンダーに追加 ↗';return `<a class="maplink" style="display:block;margin-top:7px;color:#1d4ed8;font-weight:800" href="${esc(u)}" target="_blank" rel="noopener">${label}</a>`}
 function openSubjectDetail(name){
  const related=items.filter(x=>subjectNamesForItem(x).includes(name)).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
  if(!related.length)return;
