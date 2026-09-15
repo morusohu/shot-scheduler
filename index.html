@@ -298,11 +298,6 @@ textarea{min-height:76px;resize:vertical}
 
     <section id="progressPanel" class="panel">
       <button class="btn primary full" id="quickAddBtn" type="button" style="margin-bottom:12px">＋ 対象者の進捗だけ登録する</button>
-      <div class="progressgrid">
-        <div class="pstat"><strong id="pSubjects">0</strong><span>対象者数</span></div>
-        <div class="pstat"><strong id="pShot">0</strong><span>撮影完了以上</span></div>
-        <div class="pstat"><strong id="pComplete">0</strong><span>広告運用中</span></div>
-      </div>
       <div class="toolbar">
         <input id="subjectKeyword" placeholder="対象者名で検索">
       </div>
@@ -681,6 +676,7 @@ function renderList(){
     ${(x.meetingDate||x.meetingUrl)?`<div style="margin-bottom:6px;font-size:12px;color:var(--muted)">🗓️ 打ち合わせ：${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">参加する</a>`:''}</div>`:''}
     ${x.chouseisanUrl?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a></div>`:''}\n    ${x.storageLink?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを開く ↗</a></div>`:''}
     ${x.publishedUrl?`<div style="margin-bottom:6px"><a class="maplink" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る ↗</a></div>`:''}
+    ${calendarLink(x,'shoot')}${x.meetingDate?calendarLink(x,'mtg'):''}
     <div class="shootcard-actions">
       <button class="link" onclick="editItem('${x.id}')">編集</button>
       <button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button>
@@ -725,9 +721,9 @@ function renderDaily(){
  events.sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
  $('dailySchedule').innerHTML=events.map(ev=>{
    const x=ev.x;
-   if(ev.kind==='mtg') return `<div class="daily-meeting"><h3>💬 撮影前MTG｜${esc(x.project)}</h3><div class="daily-meta"><span>🕒 ${esc(x.meetingTime||'時間未設定')}</span>${x.subject?`<span>👤 ${esc(x.subject)}</span>`:''}${x.owner?`<span>主担当：${esc(x.owner)}</span>`:''}</div>${x.meetingUrl?`<div style="margin-top:8px"><a class="maplink" style="color:#1d4ed8;font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加 ↗</a></div>`:''}<div style="margin-top:10px"><button class="link" onclick="editItem('${x.id}')">予定を編集</button></div></div>`;
+   if(ev.kind==='mtg') return `<div class="daily-meeting"><h3>💬 撮影前MTG｜${esc(x.project)}</h3><div class="daily-meta"><span>🕒 ${esc(x.meetingTime||'時間未設定')}</span>${x.subject?`<span>👤 ${esc(x.subject)}</span>`:''}${x.owner?`<span>主担当：${esc(x.owner)}</span>`:''}</div>${x.meetingUrl?`<div style="margin-top:8px"><a class="maplink" style="color:#1d4ed8;font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加 ↗</a></div>`:''}${calendarLink(x,'mtg')}<div style="margin-top:10px"><button class="link" onclick="editItem('${x.id}')">予定を編集</button></div></div>`;
    const steps=(x.timeline||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-   return `<div class="daily-shoot"><h3>🎥 ${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>動画編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${(x.meetingDate||x.meetingUrl)?`<div class="sectionlabel">事前打ち合わせ</div><div class="small">${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加</a>`:''}</div>`:''}${x.chouseisanUrl?`<div class="sectionlabel">日程調整</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを開く ↗</a>`:''}${x.publishedUrl?`<div class="sectionlabel">公開動画</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る ↗</a>`:''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px"><a class="maplink" style="color:inherit;font-weight:800" href="${mapHref(st.location)}" target="_blank" rel="noopener">📍 ${esc(st.location)} ↗</a></div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`;
+   return `<div class="daily-shoot"><h3>🎥 ${esc(x.project)}</h3><div class="daily-meta"><span>${esc(x.time||'時間未設定')}</span><span>${esc(x.location||'場所未設定')}</span>${x.meetingPlace?`<a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${mapHref(x.meetingPlace)}" target="_blank" rel="noopener">🗺️ 集合：${esc(x.meetingPlace)}</a>`:''}<span>主担当：${esc(x.owner||'-')}</span>${x.editor?`<span>動画編集担当：${esc(x.editor)}</span>`:''}</div>${x.scenario?`<div class="sectionlabel">撮影シナリオ</div><div class="scenario-box">${esc(x.scenario)}</div>`:''}${(x.meetingDate||x.meetingUrl)?`<div class="sectionlabel">事前打ち合わせ</div><div class="small">${esc(x.meetingDate?fmtDateJp(x.meetingDate):'')}${x.meetingTime?' '+esc(x.meetingTime):''}${x.meetingUrl?` <a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.meetingUrl)}" target="_blank" rel="noopener">🔗 ミーティングに参加</a>`:''}</div>`:''}${x.chouseisanUrl?`<div class="sectionlabel">日程調整</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.chouseisanUrl)}" target="_blank" rel="noopener">📅 調整さんを開く ↗</a>`:''}${x.storageLink?`<div class="sectionlabel">撮影データ</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.storageLink)}" target="_blank" rel="noopener">📁 撮影データを開く ↗</a>`:''}${x.publishedUrl?`<div class="sectionlabel">公開動画</div><a class="maplink" style="color:var(--accent-dark);font-weight:800" href="${esc(x.publishedUrl)}" target="_blank" rel="noopener">🎬 公開動画を見る ↗</a>`:''}${calendarLink(x,'shoot')}${x.meetingDate?calendarLink(x,'mtg'):''}<div class="sectionlabel">詳細スケジュール</div>${steps.length?`<div class="daily-timeline">${steps.map(st=>`<div class="daily-step"><div class="daily-time">${esc(st.time||'--:--')}</div><div>${st.location?`<div style="font-weight:800;color:#9a3412;font-size:12px;margin-bottom:2px"><a class="maplink" style="color:inherit;font-weight:800" href="${mapHref(st.location)}" target="_blank" rel="noopener">📍 ${esc(st.location)} ↗</a></div>`:''}${st.type?`<span class="chip" style="margin-bottom:4px;display:inline-block">${esc(st.type)}</span><br>`:''}${esc(st.content||'内容未設定')}</div></div>`).join('')}</div>`:'<div class="small">詳細スケジュール未設定</div>'}<div style="margin-top:10px;display:flex;gap:16px"><button class="link" onclick="editItem('${x.id}')">編集</button><button class="link" style="color:#dc2626" onclick="removeItem('${x.id}')">削除</button></div></div>`;
  }).join('');
 }
 
@@ -748,7 +744,7 @@ function buildSubjectRows(){
 function renderProgress(){
  const rows=buildSubjectRows(); const kw=$('subjectKeyword').value.trim().toLowerCase(),fs=$('subjectStatus').value,fe=$('subjectEditor').value,ff=$('subjectFederation').value;
  const filtered=rows.filter(r=>(!kw||r.name.toLowerCase().includes(kw))&&(!fs||r.status===fs)&&(!fe||r.editors.includes(fe))&&(!ff||r.federation===ff));
- $('pSubjects').textContent=rows.length;$('pShot').textContent=rows.filter(r=>statusOrder[r.status]>=2).length;$('pComplete').textContent=rows.filter(r=>r.status==='Google広告運用中').length;
+
  $('progressCards').innerHTML=filtered.map(r=>{const total=Object.keys(statusOrder).length;const pct=Math.round(100*((statusOrder[r.status]??0)+1)/total);return `
   <div class="progresscard" role="button" tabindex="0" onclick="openSubjectDetail('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectDetail('${esc(r.name)}')}">
     <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)}">${esc(r.status)}</span></div>
@@ -762,6 +758,17 @@ function renderProgress(){
 
 let subjectDetailName='';
 function externalLink(url,label){return url?`<a class="maplink" style="display:block;margin-top:7px;color:#1d4ed8;font-weight:800" href="${esc(url)}" target="_blank" rel="noopener">${label} ↗</a>`:''}
+function compactCalDate(ds,time){if(!ds)return '';const d=ds.replace(/-/g,'');const t=(time||'').replace(':','');return d+'T'+(t?`${t}00`:'090000')}
+function googleCalendarHref(x,kind='shoot'){
+ const isMtg=kind==='mtg', ds=isMtg?x.meetingDate:x.date, tm=isMtg?x.meetingTime:x.time;if(!ds)return '';
+ const start=compactCalDate(ds,tm); let end;
+ if(tm){const d=new Date(`${ds}T${tm}:00`);d.setMinutes(d.getMinutes()+(isMtg?60:120));end=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}00`}else{end=start}
+ const title=isMtg?`撮影前MTG｜${x.project||x.subject||''}`:`撮影｜${x.project||x.subject||''}`;
+ const details=[x.subject?`対象者：${x.subject}`:'',x.owner?`主担当：${x.owner}`:'',x.editor?`動画編集担当：${x.editor}`:'',isMtg&&x.meetingUrl?`参加URL：${x.meetingUrl}`:''].filter(Boolean).join('\n');
+ const location=isMtg?'':(x.location||x.meetingPlace||'');
+ const q=new URLSearchParams({action:'TEMPLATE',text:title,dates:`${start}/${end}`,details,location});return 'https://calendar.google.com/calendar/render?'+q.toString();
+}
+function calendarLink(x,kind='shoot'){const u=googleCalendarHref(x,kind);return u?`<a class="maplink" style="display:block;margin-top:7px;color:#1d4ed8;font-weight:800" href="${esc(u)}" target="_blank" rel="noopener">📅 Googleカレンダーに追加 ↗</a>`:''}
 function openSubjectDetail(name){
  const related=items.filter(x=>splitNames(x.subject).includes(name)).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
  if(!related.length)return;
@@ -783,6 +790,7 @@ function openSubjectDetail(name){
       ${externalLink(x.chouseisanUrl,'📅 調整さんを開く')}
       ${externalLink(x.storageLink,'📁 撮影データを開く')}
       ${externalLink(x.publishedUrl,'🎬 公開動画を見る')}
+      ${calendarLink(x,'shoot')}${x.meetingDate?calendarLink(x,'mtg'):''}
       <button type="button" class="link" style="margin-top:9px" onclick="closeSheet($('subjectDetailSheet'));editItem('${x.id}')">この登録を編集</button>
    </div>`).join('')}
    <button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));openSubjectProgress('${esc(name)}')">進捗を変更</button>`;
