@@ -866,7 +866,7 @@ function openSubjectDetail(name){
       ${externalLink(x.publishedUrl,'🎬 公開動画を見る')}
       ${calendarLink(x,'shoot')}${x.meetingDate?calendarLink(x,'mtg'):''}
    </div>`).join('')}
-   <button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));editItem('${editTarget.id}')">詳細を編集</button>`;
+   <button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));editItem('${editTarget.id}')">詳細を変更</button>`;
  openSheet($('subjectDetailSheet'));
 }
 window.openSubjectDetail=openSubjectDetail;
