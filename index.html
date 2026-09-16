@@ -561,31 +561,33 @@ function parseMetaNotes(notes=''){const lines=String(notes||'').split('\n');cons
 function packNotes(notes='',url='',federation='',finalStatus=''){const base=String(notes||'').trim();const c=url?CHOUSEISAN_MARK+url.trim():'';const f=federation?FEDERATION_MARK+federation.trim():'';const g=finalStatus?FINAL_STATUS_MARK+finalStatus.trim():'';return [base,c,f,g].filter(Boolean).join('\n')}
 function fromDb(x){const pn=parseMetaNotes(x.notes||'');return {id:x.id,date:x.shoot_date||'',time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:(x.status==='本部承認済み'?'本部承認済':(x.status||'撮影日程調整中')),gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:pn.notes,chouseisanUrl:pn.url,federation:pn.federation,storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||'',finalStatus:pn.finalStatus||''}}
 function toDb(x){
+  // 編集時は「空欄」も更新値として送る。
+  // 文字列は空文字、日付・時刻は null にして、以前の値が残らないようにする。
   const payload = {
     id:x.id,
     shoot_date:x.date||null,
     shoot_time:x.time||null,
     project_name:x.project,
-    subjects:x.subject||null,
-    location:x.location||null,
-    meeting_place:x.meetingPlace||null,
-    participants:x.participants||null,
-    owner:x.owner||null,
-    editor:x.editor||null,
+    subjects:x.subject||'',
+    location:x.location||'',
+    meeting_place:x.meetingPlace||'',
+    participants:x.participants||'',
+    owner:x.owner||'',
+    editor:x.editor||'',
     status:x.status,
-    gear:x.gear||null,
-    scenario:x.scenario||null,
-    timeline:x.timeline||[],
-    notes:packNotes(x.notes,x.chouseisanUrl,x.federation,x.finalStatus)||null,
-    storage_link:x.storageLink||null,
+    gear:x.gear||'',
+    scenario:x.scenario||'',
+    timeline:Array.isArray(x.timeline)?x.timeline:[],
+    notes:packNotes(x.notes,x.chouseisanUrl,x.federation,x.finalStatus)||'',
+    storage_link:x.storageLink||'',
     pre_meeting_date:x.meetingDate||null,
     pre_meeting_time:x.meetingTime||null,
-    published_url:x.publishedUrl||null,
-    meeting_url:x.meetingUrl||null
+    published_url:x.publishedUrl||'',
+    meeting_url:x.meetingUrl||''
   };
   return payload;
 }
-async function loadItems(){try{const r=await fetch(API+'?select=*&order=shoot_date.asc,shoot_time.asc',{headers:HEADERS});if(!r.ok)throw new Error(await r.text());items=(await r.json()).map(fromDb);renderAll()}catch(e){console.error(e);alert('共有データの読み込みに失敗しました。\n\n【詳細】\n'+(e.message||e))}}
+async function loadItems(){try{const r=await fetch(API+'?select=*&order=shoot_date.asc,shoot_time.asc&_ts='+Date.now(),{headers:HEADERS,cache:'no-store'});if(!r.ok)throw new Error(await r.text());items=(await r.json()).map(fromDb);renderAll()}catch(e){console.error(e);alert('共有データの読み込みに失敗しました。\n\n【詳細】\n'+(e.message||e))}}
 let viewDate=new Date(); viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth(),1);
 const statusOrder={'撮影日程調整中':0,'撮影日確定':1,'撮影完了':2,'編集中':3,'本部承認済':4,'選管動画確認済':5,'動画データ受渡済（サムネ含む）':6,'Google広告運用中':7};
 function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
@@ -599,7 +601,17 @@ const SHOOT_TYPES=['メイン動画','本人ありBロール（エキストラ�
 function timelineRows(){return [...document.querySelectorAll('#timelineEditor .timeline-row')].map(r=>({time:r.querySelector('.tl-time').value,location:r.querySelector('.tl-location').value.trim(),type:r.querySelector('.tl-type').value,content:r.querySelector('.tl-content').value.trim()})).filter(v=>v.time||v.location||v.type||v.content)}
 function addTimelineRow(step={}){const row=document.createElement('div');row.className='timeline-row';row.innerHTML=`<div class="timeline-row-top"><input type="time" class="tl-time" step="300" value="${esc(step.time||'')}"><input class="tl-location" placeholder="場所（例：公園）" value="${esc(step.location||'')}"><button type="button" class="remove-step" title="削除">×</button></div><div class="map-actions" style="margin-bottom:6px"><button type="button" class="btn ghost tl-map-btn" style="flex:1;font-size:12px;padding:8px">🗺️ 地図を見る</button><button type="button" class="btn ghost tl-route-btn" style="flex:1;font-size:12px;padding:8px">🚗 ルート</button></div><select class="tl-type ${step.type?'has-value':''}"><option value="">未選択</option>${SHOOT_TYPES.map(t=>`<option value="${esc(t)}" ${step.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select><input class="tl-content" placeholder="撮影内容" value="${esc(step.content||'')}">`;row.querySelector('.remove-step').onclick=()=>{row.remove();if(!document.querySelector('#timelineEditor .timeline-row'))addTimelineRow()};row.querySelector('.tl-type').addEventListener('change',e=>e.target.classList.toggle('has-value',!!e.target.value));row.querySelector('.tl-map-btn').addEventListener('click',()=>{const loc=row.querySelector('.tl-location').value.trim();if(!loc){alert('場所を入力してください。');return}window.open(mapHref(loc),'_blank','noopener')});row.querySelector('.tl-route-btn').addEventListener('click',()=>{const loc=row.querySelector('.tl-location').value.trim();if(!loc){alert('場所を入力してください。');return}window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(loc)+'&travelmode=driving','_blank','noopener')});$('timelineEditor').appendChild(row)}
 function setTimeline(steps=[]){$('timelineEditor').innerHTML='';(steps.length?steps:[{}]).forEach(addTimelineRow)}
-async function saveItem(data){const exists=items.some(x=>x.id===data.id);const url=exists?API+'?id=eq.'+encodeURIComponent(data.id):API;const r=await fetch(url,{method:exists?'PATCH':'POST',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(toDb(data))});if(!r.ok)throw new Error(await r.text());await loadItems()}
+async function saveItem(data){
+  const exists=items.some(x=>x.id===data.id);
+  const payload=toDb(data);
+  const url=exists?API+'?id=eq.'+encodeURIComponent(data.id):API;
+  const r=await fetch(url,{method:exists?'PATCH':'POST',headers:{...HEADERS,'Prefer':'return=representation'},body:JSON.stringify(payload),cache:'no-store'});
+  if(!r.ok)throw new Error(await r.text());
+  const saved=await r.json();
+  if(exists&&saved.length===0)throw new Error('更新対象のデータが見つかりませんでした。');
+  // 保存直後にDBから再取得し、画面も必ず最新値へ更新する。
+  await loadItems();
+}
 async function deleteItem(id){const r=await fetch(API+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:HEADERS});if(!r.ok)throw new Error(await r.text());await loadItems()}
 function todayStr(){return fmtDate(new Date())}
 function subjectNamesForItem(x){const names=splitNames(x.subject);if(names.length)return names;const p=String(x.project||'').trim();return p?[p]:[]}
