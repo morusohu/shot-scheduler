@@ -117,8 +117,10 @@ textarea{min-height:76px;resize:vertical}
 .progresscard-hint{font-size:10px;color:#78716c;margin-top:7px;font-weight:800}.progress-actions{display:flex;gap:8px;margin-top:10px}.progress-actions button{flex:1;border-radius:10px;padding:9px 8px;font-size:12px;font-weight:900}.progress-detail-btn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}.progress-change-btn{background:#f97316;color:#fff;border:1px solid #f97316}
 .status-choice{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:1px solid #fed7aa;border-radius:12px;padding:13px 12px;margin-bottom:8px;color:#292524;font-weight:800;min-height:50px}
 .status-choice:active{background:#fff7ed}.status-choice.current{border:2px solid #f97316;background:#fff7ed}.status-choice .check{width:22px;text-align:center;color:#f97316;font-size:16px;flex:none}.status-choice .status-label{flex:1}.status-choice .current-label{font-size:10px;color:#c2410c;font-weight:900}
-.progresscard-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.progresscard-top b{font-size:15px}
+.progresscard-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,46%);align-items:stretch;gap:12px;margin-bottom:9px}
+.progresscard-top>b{font-size:18px;line-height:1.35;padding:8px 0;align-self:center}
+.progress-status-large{width:100%;min-height:76px;padding:10px 12px;border-radius:14px;font-size:18px;font-weight:900;line-height:1.25;text-align:center;white-space:normal;box-shadow:0 1px 0 rgba(0,0,0,.03);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.progress-current-label{font-size:11px;font-weight:900;color:#78716c;margin-bottom:5px;display:block;letter-spacing:.03em}
 .bar{height:8px;border-radius:999px;background:#e7e5e4;overflow:hidden;margin:6px 0}
 .bar>span{display:block;height:100%;background:#f97316}
 .progresscard-meta{font-size:12px;color:var(--muted)}
@@ -226,6 +228,7 @@ textarea{min-height:76px;resize:vertical}
 
 @media(min-width:521px){body{background:#f2e9df}#appRoot{box-shadow:0 0 40px rgba(0,0,0,.08);min-height:100vh}.fab{right:calc(50% - 260px + 16px)}}
 
+@media(max-width:520px){.progresscard-top{grid-template-columns:minmax(0,1fr) minmax(145px,48%)}.progress-status-large{font-size:17px;min-height:72px}}
 </style>
 </head>
 <body>
@@ -807,7 +810,7 @@ function renderProgress(){
 
  $('progressCards').innerHTML=filtered.map(r=>{const finalIdx=statusOrder[r.finalStatus]??7;const currentIdx=statusOrder[r.status]??0;const pct=Math.min(100,Math.round(100*(currentIdx+1)/(finalIdx+1)));const complete=currentIdx>=finalIdx;return `
   <div class="progresscard" role="button" tabindex="0" onclick="openSubjectDetail('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectDetail('${esc(r.name)}')}">
-    <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)}">${esc(r.status)}</span></div>
+    <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)} progress-status-large"><span class="progress-current-label">現在の進捗</span>${esc(r.status)}</span></div>
     <div class="bar"><span style="width:${pct}%"></span></div>
     <div class="progresscard-meta">${complete?`<b style="color:#b45309">✓ 完了</b>（完了地点：${esc(r.finalStatus)}）<br>`:`完了地点：${esc(r.finalStatus)}<br>`}${r.federation?`<span class="chip" style="margin-bottom:5px">${esc(r.federation)}</span><br>`:''}${r.count}件・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>動画編集担当：${esc(r.editors.join(' / '))}`:''}</div>
     <div class="progresscard-hint">タップして詳細を表示</div>
