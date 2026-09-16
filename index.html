@@ -119,11 +119,13 @@ textarea{min-height:76px;resize:vertical}
 .status-choice:active{background:#fff7ed}.status-choice.current{border:2px solid #f97316;background:#fff7ed}.status-choice .check{width:22px;text-align:center;color:#f97316;font-size:16px;flex:none}.status-choice .status-label{flex:1}.status-choice .current-label{font-size:10px;color:#c2410c;font-weight:900}
 .progresscard-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,46%);align-items:stretch;gap:12px;margin-bottom:9px}
 .progresscard-top>b{font-size:18px;line-height:1.35;padding:8px 0;align-self:center}
-.progress-status-large{width:100%;min-height:76px;padding:10px 12px;border-radius:14px;font-size:18px;font-weight:900;line-height:1.25;text-align:center;white-space:normal;box-shadow:0 1px 0 rgba(0,0,0,.03);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.progress-status-large{width:100%;min-height:88px;padding:10px 12px;border-radius:14px;font-size:18px;font-weight:900;line-height:1.25;text-align:center;white-space:normal;box-shadow:0 1px 0 rgba(0,0,0,.03);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .progress-current-label{font-size:11px;font-weight:900;color:#78716c;margin-bottom:5px;display:block;letter-spacing:.03em}
 .bar{height:8px;border-radius:999px;background:#e7e5e4;overflow:hidden;margin:6px 0}
 .bar>span{display:block;height:100%;background:#f97316}
 .progresscard-meta{font-size:12px;color:var(--muted)}
+.progress-final-point{margin-top:7px;padding-top:7px;border-top:1px solid rgba(120,80,20,.14);font-size:11px;font-weight:700;line-height:1.25;color:#6b6259;width:100%}
+.progress-final-point.done{color:#b45309}
 
 .progressgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .pstat{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:10px;text-align:center}
@@ -228,7 +230,7 @@ textarea{min-height:76px;resize:vertical}
 
 @media(min-width:521px){body{background:#f2e9df}#appRoot{box-shadow:0 0 40px rgba(0,0,0,.08);min-height:100vh}.fab{right:calc(50% - 260px + 16px)}}
 
-@media(max-width:520px){.progresscard-top{grid-template-columns:minmax(0,1fr) minmax(145px,48%)}.progress-status-large{font-size:17px;min-height:72px}}
+@media(max-width:520px){.progresscard-top{grid-template-columns:minmax(0,1fr) minmax(150px,49%)}.progress-status-large{font-size:17px;min-height:86px}}
 </style>
 </head>
 <body>
@@ -810,9 +812,9 @@ function renderProgress(){
 
  $('progressCards').innerHTML=filtered.map(r=>{const finalIdx=statusOrder[r.finalStatus]??7;const currentIdx=statusOrder[r.status]??0;const pct=Math.min(100,Math.round(100*(currentIdx+1)/(finalIdx+1)));const complete=currentIdx>=finalIdx;return `
   <div class="progresscard" role="button" tabindex="0" onclick="openSubjectDetail('${esc(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubjectDetail('${esc(r.name)}')}">
-    <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)} progress-status-large"><span class="progress-current-label">現在の進捗</span>${esc(r.status)}</span></div>
+    <div class="progresscard-top"><b>${esc(r.name)}</b><span class="badge ${badge(r.status)} progress-status-large"><span class="progress-current-label">現在の進捗</span>${esc(r.status)}<span class="progress-final-point ${complete?'done':''}">${complete?'✓ 完了　':''}完了地点：${esc(r.finalStatus)}</span></span></div>
     <div class="bar"><span style="width:${pct}%"></span></div>
-    <div class="progresscard-meta">${complete?`<b style="color:#b45309">✓ 完了</b>（完了地点：${esc(r.finalStatus)}）<br>`:`完了地点：${esc(r.finalStatus)}<br>`}${r.federation?`<span class="chip" style="margin-bottom:5px">${esc(r.federation)}</span><br>`:''}${r.count}件・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>動画編集担当：${esc(r.editors.join(' / '))}`:''}</div>
+    <div class="progresscard-meta">${r.federation?`<span class="chip" style="margin-bottom:5px">${esc(r.federation)}</span><br>`:''}${r.count}件・次回：${esc(r.next)}<br>${esc(r.projects.join(' / '))}${r.editors.length?`<br>動画編集担当：${esc(r.editors.join(' / '))}`:''}</div>
     <div class="progresscard-hint">タップして詳細を表示</div>
     <div class="progress-actions"><button type="button" class="progress-detail-btn" onclick="event.stopPropagation();openSubjectDetail('${esc(r.name)}')">詳細を見る</button><button type="button" class="progress-change-btn" onclick="event.stopPropagation();openSubjectProgress('${esc(r.name)}')">進捗を変更</button></div>
   </div>`}).join('');
