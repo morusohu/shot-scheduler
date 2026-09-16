@@ -587,7 +587,7 @@ function toDb(x){
   };
   return payload;
 }
-async function loadItems(){try{const r=await fetch(API+'?select=*&order=shoot_date.asc,shoot_time.asc&_ts='+Date.now(),{headers:HEADERS,cache:'no-store'});if(!r.ok)throw new Error(await r.text());items=(await r.json()).map(fromDb);renderAll()}catch(e){console.error(e);alert('共有データの読み込みに失敗しました。\n\n【詳細】\n'+(e.message||e))}}
+async function loadItems(){try{const r=await fetch(API+'?select=*&order=shoot_date.asc,shoot_time.asc',{headers:HEADERS,cache:'no-store'});if(!r.ok)throw new Error(await r.text());items=(await r.json()).map(fromDb);renderAll()}catch(e){console.error(e);alert('共有データの読み込みに失敗しました。\n\n【詳細】\n'+(e.message||e))}}
 let viewDate=new Date(); viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth(),1);
 const statusOrder={'撮影日程調整中':0,'撮影日確定':1,'撮影完了':2,'編集中':3,'本部承認済':4,'選管動画確認済':5,'動画データ受渡済（サムネ含む）':6,'Google広告運用中':7};
 function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
