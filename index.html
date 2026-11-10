@@ -240,6 +240,7 @@ textarea{min-height:76px;resize:vertical}
 @media(min-width:521px){body{background:#f2e9df}#appRoot{box-shadow:0 0 40px rgba(0,0,0,.08);min-height:100vh}.fab{right:calc(50% - 260px + 16px)}}
 
 @media(max-width:520px){.progresscard-top{grid-template-columns:minmax(0,1fr) minmax(150px,49%)}.progress-status-large{font-size:17px;min-height:86px}}
+.share-custom-fields{margin:10px 0;padding:12px;background:#fff;border:1px solid #fed7aa;border-radius:12px;max-height:260px;overflow:auto}.share-custom-fields .share-group{font-size:12px;font-weight:900;color:#9a3412;margin:12px 0 6px}.share-custom-fields .share-group:first-child{margin-top:0}.share-custom-fields label{display:flex;align-items:center;gap:9px;margin:0;padding:7px 3px;font-size:13px;font-weight:600}.share-custom-fields input{width:18px;height:18px;min-height:18px;accent-color:#f97316;-webkit-appearance:checkbox;appearance:checkbox;flex:none}.share-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:14px}.share-actions .btn{font-size:13px;padding:10px 6px}
 </style>
 </head>
 <body>
@@ -414,7 +415,7 @@ textarea{min-height:76px;resize:vertical}
       </div>
 
       <div class="form-section">
-        <div class="form-section-title">📍 場所</div>
+        <div class="form-section-title">📍 撮影場所（メイン）</div>
         <label>撮影場所</label>
         <input type="hidden" id="location">
         <div class="picker" id="locationPicker">
@@ -520,6 +521,22 @@ textarea{min-height:76px;resize:vertical}
   <div class="sheet-body">
     <div class="hint" style="margin-bottom:10px">変更する進捗をタップしてください。</div>
     <div id="progressStatusChoices"></div>
+  </div>
+</div>
+
+<!-- ============ TEXT SHARE SHEET ============ -->
+<div class="sheet" id="textShareSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><h2 id="shareSheetTitle">情報を出力</h2><button class="closebtn" type="button" onclick="closeSheet($('textShareSheet'))">×</button></div>
+  <div class="sheet-body">
+    <label for="shareScope">出力する内容</label>
+    <select id="shareScope"><option value="shoot">撮影情報のみ</option><option value="all">すべての情報</option><option value="custom">カスタム（項目を選択）</option></select>
+    <div id="shareCustomTools" style="display:none;gap:8px;margin-top:10px"><button type="button" class="btn ghost" id="shareSelectAll">全選択</button><button type="button" class="btn ghost" id="shareClearAll">全解除</button></div>
+    <div id="shareCustomFields" class="share-custom-fields" style="display:none"></div>
+    <div class="hint" style="margin:8px 0">未設定の項目は省略します。出力前に内容を確認・編集できます。</div>
+    <textarea id="shareText" rows="13" style="min-height:260px;white-space:pre-wrap" aria-label="共有用テキスト"></textarea>
+    <div class="actions"><button class="btn primary full" type="button" id="copyShareText">📋 テキストコピー</button><button class="btn primary full" type="button" id="exportShareImage" style="display:none">🖼️ 画像保存</button></div>
+    <div class="hint" id="shareFeedback" aria-live="polite"></div>
   </div>
 </div>
 
@@ -662,7 +679,7 @@ function initMultiPicker({hiddenId,chipsId,inputId,suggestId,pickerId,candidates
   function setSelection(str){selected=splitNames(str);sync();renderChips();$(inputId).value='';renderSuggest()}
   $(inputId).addEventListener('focus',renderSuggest);
   $(inputId).addEventListener('input',renderSuggest);
-  $(inputId).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();add($(inputId).value)}});
+  $(inputId).addEventListener('keydown',e=>{if(e.key==='Enter'){if(e.isComposing||e.keyCode===229)return;e.preventDefault();add($(inputId).value)}});
   $(pickerId).addEventListener('click',e=>{if(e.target===$(pickerId)||e.target===$(chipsId))$(inputId).focus()});
   document.addEventListener('click',e=>{if(!$(pickerId).contains(e.target))$(suggestId).innerHTML=''});
   function commitPending(){const v=$(inputId).value.trim();if(v)add(v)}
@@ -682,7 +699,7 @@ function initSinglePicker({inputId,suggestId,wrapId,candidatesFn,emptyLabel}){
   }
   $(inputId).addEventListener('focus',renderSuggest);
   $(inputId).addEventListener('input',renderSuggest);
-  $(inputId).addEventListener('keydown',e=>{if(e.key==='Enter')$(suggestId).innerHTML=''});
+  $(inputId).addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();$(suggestId).innerHTML=''}});
   document.addEventListener('click',e=>{if(!$(wrapId).contains(e.target))$(suggestId).innerHTML=''});
 }
 
@@ -884,9 +901,8 @@ function calendarLink(x,kind='shoot'){const u=googleCalendarHref(x,kind);if(!u)r
 function openSubjectDetail(name){
  const related=items.filter(x=>subjectNamesForItem(x).includes(name)).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
  if(!related.length)return;
- // 同一対象者＋同一案件の重複登録は表示上1件にまとめる。元データは削除しない。
- const seenProjects=new Set();
- const detailRows=related.filter(x=>{const key=(x.project||'').trim()||'__NO_PROJECT__';if(seenProjects.has(key))return false;seenProjects.add(key);return true;});
+ // 同じ案件でも撮影日時が異なる予定はすべて表示する。
+ const detailRows=related;
  const editTarget=detailRows[0]||related[0];
  subjectDetailName=name;
  const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'未定');
@@ -902,14 +918,14 @@ function openSubjectDetail(name){
     <div class="card" style="padding:14px;margin-bottom:10px"><b>📋 基本情報</b>${row('撮影日',val(fmtDateJp(x.date)))}${row('時間',val(x.time))}${row('案件名',val(x.project))}${row('ステータス',val(currentProgressForItem(x)))}</div>
     <div class="card" style="padding:14px;margin-bottom:10px"><b>🗓️ 事前打ち合わせ</b>${row('打ち合わせ日',val(fmtDateJp(x.meetingDate)))}${row('打ち合わせ時間',val(x.meetingTime))}${row('ミーティングURL',link(x.meetingUrl,'ミーティングURLを開く'))}</div>
     <div class="card" style="padding:14px;margin-bottom:10px"><b>👥 対象者・担当</b>${row('撮影対象者',val(x.subject))}${row('県連区分',val(x.federation))}${row('支部',val(x.branch))}${row('撮影参加者',val(x.participants))}${row('主担当',val(x.owner))}${row('動画編集担当',val(x.editor))}</div>
-    <div class="card" style="padding:14px;margin-bottom:10px"><b>📍 場所</b>${row('撮影場所',val(x.location))}${x.location?`<div style="margin:8px 0 12px">${splitNames(x.location).map(place=>`<div style="margin-top:7px"><b>${esc(place)}</b><br>${mapLink(place)}　${routeLink(place)}</div>`).join('')}</div>`:''}${row('集合場所',val(x.meetingPlace))}${x.meetingPlace?`<div style="margin-top:8px">${mapLink(x.meetingPlace)}　${routeLink(x.meetingPlace)}</div>`:''}</div>
+    <div class="card" style="padding:14px;margin-bottom:10px"><b>📍 撮影場所（メイン）</b>${row('撮影場所',val(x.location))}${x.location?`<div style="margin:8px 0 12px">${splitNames(x.location).map(place=>`<div style="margin-top:7px"><b>${esc(place)}</b><br>${mapLink(place)}　${routeLink(place)}</div>`).join('')}</div>`:''}${row('集合場所',val(x.meetingPlace))}${x.meetingPlace?`<div style="margin-top:8px">${mapLink(x.meetingPlace)}　${routeLink(x.meetingPlace)}</div>`:''}</div>
     <div class="card" style="padding:14px;margin-bottom:10px"><b>🎬 撮影内容</b>${row('撮影シナリオ',x.scenario?`<span style="white-space:pre-wrap">${esc(x.scenario)}</span>`:val(''))}<div style="padding-top:10px"><div class="small" style="margin-bottom:5px">日別の詳細撮影スケジュール</div>${timeline}</div></div>
     <div class="card" style="padding:14px;margin-bottom:10px"><b>🗂️ その他</b>${row('調整さんURL',link(x.chouseisanUrl,'調整さんを開く'))}${row('撮影データの格納先リンク',link(x.storageLink,'撮影データを開く'))}${row('公開動画URL',link(x.publishedUrl,'公開動画を見る'))}${row('備考',x.notes?`<span style="white-space:pre-wrap">${esc(x.notes)}</span>`:val(''))}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">${x.date?`<div>${calendarLink(x,'shoot')}</div>`:'<div></div>'}${x.meetingDate?`<div>${calendarLink(x,'mtg')}</div>`:'<div></div>'}</div>
    </div>`;
  };
  $('subjectDetailTitle').textContent=name+'さんの詳細';
- $('subjectDetailBody').innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px"><b style="font-size:17px">${esc(name)}</b><span class="badge ${badge(current)}">${esc(current)}</span></div><button type="button" class="btn primary full" style="margin:0 0 14px" onclick="closeSheet($('subjectDetailSheet'));editItem('${editTarget.id}')">詳細を変更</button>${detailRows.map(renderOne).join('')}<div class="hint" style="margin:4px 0 14px;text-align:center">閲覧専用です。すべての登録項目を確認できます。</div><button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));editItem('${editTarget.id}')">詳細を変更</button>`;
+ $('subjectDetailBody').innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px"><b style="font-size:17px">${esc(name)}</b><span class="badge ${badge(current)}">${esc(current)}</span></div><button type="button" class="btn primary full" style="margin:0 0 10px" onclick="closeSheet($('subjectDetailSheet'));editItem('${editTarget.id}')">詳細を変更</button><div class="share-actions"><button type="button" class="btn ghost" onclick="openTextShare('subject',subjectDetailName)">📋 テキストコピー</button><button type="button" class="btn ghost" onclick="openTextShare('subject',subjectDetailName,'image')">🖼️ 画像保存</button></div>${detailRows.map(renderOne).join('')}<div class="hint" style="margin:4px 0 14px;text-align:center">閲覧専用です。すべての登録項目を確認できます。</div><button type="button" class="btn primary full" style="margin-top:8px" onclick="closeSheet($('subjectDetailSheet'));editItem('${editTarget.id}')">詳細を変更</button>`;
  openSheet($('subjectDetailSheet'));
 }
 window.openSubjectDetail=openSubjectDetail;
@@ -976,6 +992,13 @@ function clearForm(){['id','date','time','project','meetingPlace','owner','edito
  const u=getLoginUser(); if(u&&!$('owner').value)$('owner').value=u;
 }
 $('saveTopBtn').addEventListener('click',()=>$('form').requestSubmit());
+// Enterキーでフォームが意図せず送信されないようにする。
+// 日本語IMEの変換確定中は一切介入せず、textareaの改行も許可する。
+$('form').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||e.isComposing||e.keyCode===229)return;
+  if(e.target.closest('textarea'))return;
+  e.preventDefault();
+});
 $('form').addEventListener('submit',async e=>{e.preventDefault();subjectPicker.commitPending();participantsPicker.commitPending();locationPicker.commitPending();if(!$('subject').value.trim()){alert('撮影対象者を選択してください。');$('subjectInput').focus();return}const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:'',scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim(),chouseisanUrl:$('chouseisanUrl').value.trim(),federation:$('federation').value,branch:$('branch').value};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
 function viewSchedule(id){
  const x=items.find(v=>v.id===id);if(!x)return;
@@ -991,11 +1014,11 @@ function viewSchedule(id){
  $('scheduleViewTitle').textContent='予定を見る';
  $('scheduleViewBody').innerHTML=`
    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px"><div><h3 style="margin:0 0 6px">${esc(x.project||'予定')}</h3><div>${x.subject?'👤 '+esc(x.subject):'<span class="small">対象者未設定</span>'}</div></div><span class="status-badge">${esc(currentProgressForItem(x))}</span></div>
-   <button type="button" class="btn primary full" style="margin:0 0 14px" onclick="closeSheet($('scheduleViewSheet'));editItem('${x.id}')">詳細を変更</button>
+   <button type="button" class="btn primary full" style="margin:0 0 10px" onclick="closeSheet($('scheduleViewSheet'));editItem('${x.id}')">詳細を変更</button><div class="share-actions"><button type="button" class="btn ghost" onclick="openTextShare('schedule','${x.id}')">📋 テキストコピー</button><button type="button" class="btn ghost" onclick="openTextShare('schedule','${x.id}','image')">🖼️ 画像保存</button></div>
    <div class="card" style="padding:14px;margin-bottom:12px"><b>📋 基本情報</b>${row('撮影日',val(fmtDateJp(x.date)))}${row('時間',val(x.time))}${row('案件名',val(x.project))}${row('ステータス',val(currentProgressForItem(x)))}</div>
    <div class="card" style="padding:14px;margin-bottom:12px"><b>🗓️ 事前打ち合わせ</b>${row('打ち合わせ日',val(fmtDateJp(x.meetingDate)))}${row('打ち合わせ時間',val(x.meetingTime))}${row('ミーティングURL',link(x.meetingUrl,'ミーティングURLを開く'))}</div>
    <div class="card" style="padding:14px;margin-bottom:12px"><b>👥 対象者・担当</b>${row('撮影対象者',val(x.subject))}${row('県連区分',val(x.federation))}${row('支部',val(x.branch))}${row('撮影参加者',val(x.participants))}${row('主担当',val(x.owner))}${row('動画編集担当',val(x.editor))}</div>
-   <div class="card" style="padding:14px;margin-bottom:12px"><b>📍 場所</b>${row('撮影場所',val(x.location))}${x.location?`<div style="margin:8px 0 12px">${splitNames(x.location).map(place=>`<div style="margin-top:7px"><b>${esc(place)}</b><br>${mapLink(place)}　${routeLink(place)}</div>`).join('')}</div>`:''}${row('集合場所',val(x.meetingPlace))}${x.meetingPlace?`<div style="margin-top:8px">${mapLink(x.meetingPlace)}　${routeLink(x.meetingPlace)}</div>`:''}</div>
+   <div class="card" style="padding:14px;margin-bottom:12px"><b>📍 撮影場所（メイン）</b>${row('撮影場所',val(x.location))}${x.location?`<div style="margin:8px 0 12px">${splitNames(x.location).map(place=>`<div style="margin-top:7px"><b>${esc(place)}</b><br>${mapLink(place)}　${routeLink(place)}</div>`).join('')}</div>`:''}${row('集合場所',val(x.meetingPlace))}${x.meetingPlace?`<div style="margin-top:8px">${mapLink(x.meetingPlace)}　${routeLink(x.meetingPlace)}</div>`:''}</div>
    <div class="card" style="padding:14px;margin-bottom:12px"><b>🎬 撮影内容</b>${row('撮影シナリオ',x.scenario?`<span style="white-space:pre-wrap">${esc(x.scenario)}</span>`:val(''))}<div style="padding-top:10px"><div class="small" style="margin-bottom:5px">日別の詳細撮影スケジュール</div>${timeline}</div></div>
    <div class="card" style="padding:14px;margin-bottom:12px"><b>🗂️ その他</b>${row('調整さんURL',link(x.chouseisanUrl,'調整さんを開く'))}${row('撮影データの格納先リンク',link(x.storageLink,'撮影データを開く'))}${row('公開動画URL',link(x.publishedUrl,'公開動画を見る'))}${row('備考',x.notes?`<span style="white-space:pre-wrap">${esc(x.notes)}</span>`:val(''))}</div>
    <div class="hint" style="margin:4px 0 14px;text-align:center">閲覧専用です。この画面から内容は変更されません。</div>
@@ -1003,6 +1026,134 @@ function viewSchedule(id){
  openSheet($('scheduleViewSheet'));
 }
 window.viewSchedule=viewSchedule;
+
+
+/* ---------- 外部共有用テキスト ---------- */
+let shareSource={kind:'schedule',key:''};
+function shareRecords(){
+ if(shareSource.kind==='subject'){
+  return items.filter(x=>subjectNamesForItem(x).includes(shareSource.key)).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
+ }
+ return items.filter(x=>x.id===shareSource.key);
+}
+const SHARE_FIELDS=[
+ ['基本情報',[['project','案件名'],['subject','対象者'],['date','撮影日'],['time','撮影時間'],['status','現在の進捗']]],
+ ['所属・担当',[['federation','県連区分'],['branch','支部'],['editor','動画編集担当'],['participants','撮影参加者'],['owner','主担当'],['finalStatus','完了地点']]],
+ ['撮影・打ち合わせ',[['location','撮影場所'],['meetingPlace','集合場所'],['meetingDate','事前打ち合わせ日'],['meetingTime','打ち合わせ時間'],['meetingUrl','ミーティングURL'],['scenario','撮影シナリオ'],['timeline','詳細撮影スケジュール']]],
+ ['その他',[['chouseisanUrl','調整さんURL'],['storageLink','撮影データの格納先'],['publishedUrl','公開動画URL'],['notes','備考']]]
+];
+const SHARE_PRESETS={
+ shoot:['project','subject','date','time','location','meetingPlace','participants','owner','meetingDate','meetingTime','meetingUrl','scenario','timeline'],
+ all:SHARE_FIELDS.flatMap(g=>g[1].map(f=>f[0]))
+};
+let shareSelected=new Set(SHARE_PRESETS.all);
+function initShareCustomFields(){
+ $('shareCustomFields').innerHTML=SHARE_FIELDS.map(([group,fields])=>`<div class="share-group">${esc(group)}</div>`+
+ fields.map(([key,label])=>`<label><input type="checkbox" data-share-field="${esc(key)}" checked><span>${esc(label)}</span></label>`).join('')).join('');
+ $('shareCustomFields').addEventListener('change',e=>{
+  const input=e.target.closest('[data-share-field]');if(!input)return;
+  if(input.checked)shareSelected.add(input.dataset.shareField);else shareSelected.delete(input.dataset.shareField);
+  refreshShareText();
+ });
+}
+initShareCustomFields();
+function makeShareText(scope){
+ const records=shareRecords();
+ const selected=scope==='custom'?shareSelected:new Set(SHARE_PRESETS[scope]||SHARE_PRESETS.shoot);
+ const lines=[];
+ const add=(key,label,value)=>{if(selected.has(key)&&value!==undefined&&value!==null&&String(value).trim())lines.push(label+'：'+String(value).trim())};
+ records.forEach((x,i)=>{
+  if(i)lines.push('\n────────────');
+  lines.push('【撮影・動画制作情報】');
+  add('project','案件名',x.project);
+  add('subject','対象者',shareSource.kind==='subject'?shareSource.key:x.subject);
+  add('date','撮影日',fmtDateJp(x.date));
+  add('time','撮影時間',x.time);
+  add('status','現在の進捗',currentProgressForItem(x));
+  add('federation','県連区分',x.federation);
+  add('branch','支部',x.branch);
+  add('editor','動画編集担当',x.editor);
+  add('participants','撮影参加者',x.participants);
+  add('owner','主担当',x.owner);
+  add('finalStatus','完了地点',x.finalStatus||'Google広告運用中');
+  add('location','撮影場所',x.location);
+  add('meetingPlace','集合場所',x.meetingPlace);
+  add('meetingDate','事前打ち合わせ日',fmtDateJp(x.meetingDate));
+  add('meetingTime','打ち合わせ時間',x.meetingTime);
+  add('meetingUrl','ミーティングURL',x.meetingUrl);
+  add('scenario','撮影シナリオ',x.scenario);
+  if(selected.has('timeline')&&x.timeline&&x.timeline.length){
+   const rows=x.timeline.map((t,n)=>{const parts=[t.time,t.location,t.type,t.content||t.title||t.label].filter(v=>v&&String(v).trim());return parts.length?(n+1)+'. '+parts.join(' / '):''}).filter(Boolean);
+   if(rows.length){lines.push('【詳細撮影スケジュール】');lines.push(...rows)}
+  }
+  add('chouseisanUrl','調整さんURL',x.chouseisanUrl);
+  add('storageLink','撮影データの格納先',x.storageLink);
+  add('publishedUrl','公開動画URL',x.publishedUrl);
+  add('notes','備考',x.notes);
+ });
+ return lines.join('\n');
+}
+function refreshShareText(){
+ const scope=$('shareScope').value;
+ $('shareCustomFields').style.display=scope==='custom'?'block':'none';
+ $('shareCustomTools').style.display=scope==='custom'?'flex':'none';
+ $('shareText').value=makeShareText(scope);
+ $('shareFeedback').textContent='';
+}
+function openTextShare(kind,key,mode='copy'){
+ shareSource={kind,key};$('shareScope').value='shoot';
+ $('shareSheetTitle').textContent=mode==='image'?'画像保存':'テキストコピー';
+ $('copyShareText').style.display=mode==='image'?'none':'block';
+ $('exportShareImage').style.display=mode==='image'?'block':'none';
+ refreshShareText();
+ openSheet($('textShareSheet'));
+}
+window.openTextShare=openTextShare;
+$('shareScope').addEventListener('change',refreshShareText);
+function setAllShareFields(checked){
+ shareSelected=checked?new Set(SHARE_PRESETS.all):new Set();
+ $('shareCustomFields').querySelectorAll('[data-share-field]').forEach(el=>el.checked=checked);
+ refreshShareText();
+}
+$('shareSelectAll').addEventListener('click',()=>setAllShareFields(true));
+$('shareClearAll').addEventListener('click',()=>setAllShareFields(false));
+async function copyTextShare(){const value=$('shareText').value;if(!value)return;try{await navigator.clipboard.writeText(value);$('shareFeedback').textContent='コピーしました。';}catch(e){$('shareText').focus();$('shareText').select();try{if(document.execCommand('copy')){$('shareFeedback').textContent='コピーしました。';return;}}catch(_){}$('shareFeedback').textContent='自動コピーできませんでした。テキストを選択してコピーしてください。';}}
+$('copyShareText').addEventListener('click',copyTextShare);
+async function exportShareImage(){
+ const content=$('shareText').value.trim();if(!content){$('shareFeedback').textContent='出力する内容がありません。';return}
+ const btn=$('exportShareImage');btn.disabled=true;
+ try{
+  if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+  const width=1000,pad=65,inner=width-pad*2,scale=2;
+  const measure=document.createElement('canvas').getContext('2d');
+  measure.font='29px sans-serif';
+  const lines=[];
+  for(const raw of content.split('\n')){
+   if(!raw){lines.push('');continue}
+   let row='';
+   for(const char of raw){if(row&&measure.measureText(row+char).width>inner){lines.push(row);row=char}else row+=char}
+   lines.push(row);
+  }
+  const lineHeight=48,header=172,footer=65;
+  const height=header+lines.length*lineHeight+footer;
+  if(height>15000)throw new Error('内容が長すぎます。項目を減らして出力してください。');
+  const canvas=document.createElement('canvas');canvas.width=width*scale;canvas.height=height*scale;
+  const ctx=canvas.getContext('2d');ctx.scale(scale,scale);
+  ctx.fillStyle='#fffaf5';ctx.fillRect(0,0,width,height);
+  ctx.fillStyle='#f97316';ctx.fillRect(0,0,width,14);
+  ctx.fillStyle='#9a3412';ctx.font='bold 38px sans-serif';ctx.fillText('撮影・動画制作情報',pad,94);
+  ctx.fillStyle='#fed7aa';ctx.fillRect(pad,122,inner,2);
+  ctx.textBaseline='top';ctx.font='29px sans-serif';
+  lines.forEach((line,i)=>{const y=header+i*lineHeight;ctx.fillStyle=line.startsWith('【')?'#9a3412':'#292524';ctx.font=line.startsWith('【')?'bold 29px sans-serif':'29px sans-serif';ctx.fillText(line,pad,y)});
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+  if(!blob)throw new Error('画像の作成に失敗しました。');
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;
+  a.download='撮影情報_'+new Date().toISOString().slice(0,10)+'.png';document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+  $('shareFeedback').textContent='PNG画像を出力しました。iPhoneでは「ファイル」やダウンロード一覧から確認できます。';
+ }catch(e){$('shareFeedback').textContent='画像を出力できませんでした：'+(e.message||e)}finally{btn.disabled=false}
+}
+$('exportShareImage').addEventListener('click',exportShareImage);
 
 function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','meetingPlace','owner','editor','status','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl','federation','branch'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');locationPicker.setSelection(x.location||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('saveTopBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
 async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}}}
