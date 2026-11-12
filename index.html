@@ -241,6 +241,8 @@ textarea{min-height:76px;resize:vertical}
 
 @media(max-width:520px){.progresscard-top{grid-template-columns:minmax(0,1fr) minmax(150px,49%)}.progress-status-large{font-size:17px;min-height:86px}}
 .share-custom-fields{margin:10px 0;padding:12px;background:#fff;border:1px solid #fed7aa;border-radius:12px;max-height:260px;overflow:auto}.share-custom-fields .share-group{font-size:12px;font-weight:900;color:#9a3412;margin:12px 0 6px}.share-custom-fields .share-group:first-child{margin-top:0}.share-custom-fields label{display:flex;align-items:center;gap:9px;margin:0;padding:7px 3px;font-size:13px;font-weight:600}.share-custom-fields input{width:18px;height:18px;min-height:18px;accent-color:#f97316;-webkit-appearance:checkbox;appearance:checkbox;flex:none}.share-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:14px}.share-actions .btn{font-size:13px;padding:10px 6px}
+.election-alerts{border:2px solid #f59e0b;border-radius:14px;padding:13px;background:#fffbeb;margin-bottom:14px}.election-alert-item{background:white;border:1px solid #fcd34d;border-radius:10px;padding:10px;margin:8px 0;font-size:13px}.election-alert-item.urgent{border-color:#ef4444;background:#fef2f2}.election-settings{border:2px solid #f59e0b;background:#fffbeb;border-radius:14px;padding:13px;margin-bottom:16px}.election-settings label{display:block;margin-top:12px}.election-settings .election-check{display:flex;gap:10px;align-items:center;font-weight:700}.election-check input{width:20px;height:20px;min-height:20px;accent-color:#ea580c}
+.election-notice{background:#dbeafe;color:#1d4ed8}.election-stop{background:#fee2e2;color:#b91c1c}
 </style>
 </head>
 <body>
@@ -290,6 +292,7 @@ textarea{min-height:76px;resize:vertical}
           <div class="calnav"><button id="prevMonth" type="button">‹</button><button id="todayMonth" type="button">今月</button><button id="nextMonth" type="button">›</button></div>
           <h3 id="calendarTitle"></h3>
         </div>
+        <div id="calendarElectionAlerts" aria-live="polite"></div>
         <div id="calendar" class="calendar"></div>
         <p class="hint" style="margin-top:8px">日付をタップすると、その日の詳細スケジュールを表示します。</p>
       </div>
@@ -306,6 +309,7 @@ textarea{min-height:76px;resize:vertical}
       <div class="daily-datebar">
         <input type="date" id="dailyDate" aria-label="日付を選択">
       </div>
+      <div id="dailyElectionAlerts" aria-live="polite"></div>
       <div class="small" id="dailyCount" style="margin-bottom:10px"></div>
       <div id="dailySchedule"></div>
       <div id="dailyEmpty" class="empty">この日の撮影予定はありません。</div>
@@ -331,6 +335,7 @@ textarea{min-height:76px;resize:vertical}
       <div class="filterrow" style="margin-bottom:12px">
         <select id="subjectStatus" style="flex:1"><option value="">全進捗</option><option>未定</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>編集完了</option><option>本部承認済</option><option>動画データ受渡済（サムネ含む）</option><option>選管動画確認済</option><option>Google広告運用中</option></select>
       </div>
+      <div id="electionAlertPanel" aria-live="polite"></div>
       <div id="progressCards"></div>
       <div id="progressEmpty" class="empty">撮影対象者が登録されていません。</div>
     </section>
@@ -589,9 +594,12 @@ const FEDERATION_MARK='[県連区分]';
 const FINAL_STATUS_MARK='[完了ステータス]';
 const BRANCH_MARK='[支部]';
 const SUBJECT_ORDER_MARK='[表示順]';
-function parseMetaNotes(notes=''){const lines=String(notes||'').split('\n');const c=lines.find(v=>v.startsWith(CHOUSEISAN_MARK));const f=lines.find(v=>v.startsWith(FEDERATION_MARK));const b=lines.find(v=>v.startsWith(BRANCH_MARK));const g=lines.find(v=>v.startsWith(FINAL_STATUS_MARK));const o=lines.find(v=>v.startsWith(SUBJECT_ORDER_MARK));return {url:c?c.slice(CHOUSEISAN_MARK.length).trim():'',federation:f?f.slice(FEDERATION_MARK.length).trim():'',branch:b?b.slice(BRANCH_MARK.length).trim():'',finalStatus:g?g.slice(FINAL_STATUS_MARK.length).trim():'',subjectOrder:o?Number(o.slice(SUBJECT_ORDER_MARK.length).trim()):null,notes:lines.filter(v=>!v.startsWith(CHOUSEISAN_MARK)&&!v.startsWith(FEDERATION_MARK)&&!v.startsWith(BRANCH_MARK)&&!v.startsWith(FINAL_STATUS_MARK)&&!v.startsWith(SUBJECT_ORDER_MARK)).join('\n').trim()}}
-function packNotes(notes='',url='',federation='',finalStatus='',subjectOrder=null,branch=''){const base=String(notes||'').trim();const c=url?CHOUSEISAN_MARK+url.trim():'';const f=federation?FEDERATION_MARK+federation.trim():'';const b=branch?BRANCH_MARK+branch.trim():'';const g=finalStatus?FINAL_STATUS_MARK+finalStatus.trim():'';const o=Number.isFinite(Number(subjectOrder))?SUBJECT_ORDER_MARK+Number(subjectOrder):'';return [base,c,f,b,g,o].filter(Boolean).join('\n')}
-function fromDb(x){const pn=parseMetaNotes(x.notes||'');return {id:x.id,date:x.shoot_date||'',time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:(x.status==='本部承認済み'?'本部承認済':(x.status||'未定')),gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:pn.notes,chouseisanUrl:pn.url,federation:pn.federation,branch:pn.branch,storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||'',finalStatus:pn.finalStatus||'',subjectOrder:Number.isFinite(pn.subjectOrder)?pn.subjectOrder:null}}
+const ELECTION_DATE_MARK='[選挙告示日]';
+const ADS_STOP_MARK='[広告停止確認日時]';
+const ADS_STOP_USER_MARK='[広告停止確認者]';
+function parseMetaNotes(notes=''){const lines=String(notes||'').split('\n');const c=lines.find(v=>v.startsWith(CHOUSEISAN_MARK));const f=lines.find(v=>v.startsWith(FEDERATION_MARK));const b=lines.find(v=>v.startsWith(BRANCH_MARK));const g=lines.find(v=>v.startsWith(FINAL_STATUS_MARK));const o=lines.find(v=>v.startsWith(SUBJECT_ORDER_MARK));const ed=lines.find(v=>v.startsWith(ELECTION_DATE_MARK));const ad=lines.find(v=>v.startsWith(ADS_STOP_MARK));const au=lines.find(v=>v.startsWith(ADS_STOP_USER_MARK));return {url:c?c.slice(CHOUSEISAN_MARK.length).trim():'',federation:f?f.slice(FEDERATION_MARK.length).trim():'',branch:b?b.slice(BRANCH_MARK.length).trim():'',finalStatus:g?g.slice(FINAL_STATUS_MARK.length).trim():'',subjectOrder:o?Number(o.slice(SUBJECT_ORDER_MARK.length).trim()):null,electionDate:ed?ed.slice(ELECTION_DATE_MARK.length).trim():'',adsStoppedAt:ad?ad.slice(ADS_STOP_MARK.length).trim():'',adsStoppedBy:au?au.slice(ADS_STOP_USER_MARK.length).trim():'',notes:lines.filter(v=>!v.startsWith(CHOUSEISAN_MARK)&&!v.startsWith(FEDERATION_MARK)&&!v.startsWith(BRANCH_MARK)&&!v.startsWith(FINAL_STATUS_MARK)&&!v.startsWith(SUBJECT_ORDER_MARK)&&!v.startsWith(ELECTION_DATE_MARK)&&!v.startsWith(ADS_STOP_MARK)&&!v.startsWith(ADS_STOP_USER_MARK)).join('\n').trim()}}
+function packNotes(notes='',url='',federation='',finalStatus='',subjectOrder=null,branch='',electionDate='',adsStoppedAt='',adsStoppedBy=''){const base=String(notes||'').trim();const c=url?CHOUSEISAN_MARK+url.trim():'';const f=federation?FEDERATION_MARK+federation.trim():'';const b=branch?BRANCH_MARK+branch.trim():'';const g=finalStatus?FINAL_STATUS_MARK+finalStatus.trim():'';const o=Number.isFinite(Number(subjectOrder))?SUBJECT_ORDER_MARK+Number(subjectOrder):'';const ed=electionDate?ELECTION_DATE_MARK+electionDate:'';const ad=adsStoppedAt?ADS_STOP_MARK+adsStoppedAt:'';const au=adsStoppedAt&&adsStoppedBy?ADS_STOP_USER_MARK+adsStoppedBy:'';return [base,c,f,b,g,o,ed,ad,au].filter(Boolean).join('\n')}
+function fromDb(x){const pn=parseMetaNotes(x.notes||'');return {id:x.id,date:x.shoot_date||'',time:(x.shoot_time||'').slice(0,5),project:x.project_name||'',subject:x.subjects||'',location:x.location||'',meetingPlace:x.meeting_place||'',participants:x.participants||'',owner:x.owner||'',editor:x.editor||'',status:(x.status==='本部承認済み'?'本部承認済':(x.status||'未定')),gear:x.gear||'',scenario:x.scenario||'',timeline:Array.isArray(x.timeline)?x.timeline:[],notes:pn.notes,chouseisanUrl:pn.url,federation:pn.federation,branch:pn.branch,storageLink:x.storage_link||'',meetingDate:x.pre_meeting_date||'',meetingTime:(x.pre_meeting_time||'').slice(0,5),meetingUrl:x.meeting_url||'',publishedUrl:x.published_url||'',finalStatus:pn.finalStatus||'',subjectOrder:Number.isFinite(pn.subjectOrder)?pn.subjectOrder:null,electionDate:pn.electionDate,adsStoppedAt:pn.adsStoppedAt,adsStoppedBy:pn.adsStoppedBy}}
 function toDb(x){
   // 編集時は「空欄」も更新値として送る。
   // 文字列は空文字、日付・時刻は null にして、以前の値が残らないようにする。
@@ -610,7 +618,7 @@ function toDb(x){
     gear:x.gear||'',
     scenario:x.scenario||'',
     timeline:Array.isArray(x.timeline)?x.timeline:[],
-    notes:packNotes(x.notes,x.chouseisanUrl,x.federation,x.finalStatus,x.subjectOrder,x.branch)||'',
+    notes:packNotes(x.notes,x.chouseisanUrl,x.federation,x.finalStatus,x.subjectOrder,x.branch,x.electionDate,x.adsStoppedAt,x.adsStoppedBy)||'',
     storage_link:x.storageLink||'',
     pre_meeting_date:x.meetingDate||null,
     pre_meeting_time:x.meetingTime||null,
@@ -635,6 +643,8 @@ function addTimelineRow(step={}){const row=document.createElement('div');row.cla
 function setTimeline(steps=[]){$('timelineEditor').innerHTML='';(steps.length?steps:[{}]).forEach(addTimelineRow)}
 async function saveItem(data){
   const exists=items.some(x=>x.id===data.id);
+  const original=items.find(x=>x.id===data.id);
+  if(original){for(const key of ['electionDate','adsStoppedAt','adsStoppedBy','finalStatus','subjectOrder'])if(data[key]===undefined)data[key]=original[key];}
   const payload=toDb(data);
   const url=exists?API+'?id=eq.'+encodeURIComponent(data.id):API;
   const r=await fetch(url,{method:exists?'PATCH':'POST',headers:{...HEADERS,'Prefer':'return=representation'},body:JSON.stringify(payload),cache:'no-store'});
@@ -757,8 +767,29 @@ function renderList(){
 }
 
 /* ---------- calendar ---------- */
+function electionCalendarEvents(ds){
+ const result=[];
+ allSubjects().forEach(name=>{
+  const related=items.filter(x=>subjectNamesForItem(x).includes(name));
+  if(!related.some(x=>federationMatches(x)))return;
+  const info=electionInfo(name);
+  if(!info.date)return;
+  if(info.date===ds)result.push({name,kind:'notice',info});
+  if(fmtDate(info.deadline)===ds)result.push({name,kind:info.stopped?'stopped':'stop',info});
+ });
+ return result;
+}
+function renderElectionPanel(targetId){
+ const target=$(targetId);if(!target)return;
+ const names=allSubjects().map(name=>({name,info:electionInfo(name)}))
+  .filter(x=>x.info.level>0&&items.some(item=>subjectNamesForItem(item).includes(x.name)&&federationMatches(item)))
+  .sort((a,b)=>b.info.level-a.info.level||a.info.deadline-b.info.deadline);
+ target.innerHTML=names.length?`<div class="election-alerts"><b>🔔 Google広告 停止アラート（${names.length}件）</b><div class="hint" style="margin:5px 0 8px">告示日の14日前から表示。停止確認済みは非表示です。</div>${names.map(({name,info})=>`<div class="election-alert-item ${info.level>=3?'urgent':''}"><b>${esc(name)}</b><div>${esc(electionAlertText(info))}</div><div class="small">告示日：${esc(fmtDateJp(info.date))} ／ 停止期限：${esc(fmtDateJp(fmtDate(info.deadline)))} 23:00</div><button type="button" class="btn ghost" style="margin-top:6px" data-election-subject="${esc(name)}">停止状況を確認</button></div>`).join('')}</div>`:'';
+ target.querySelectorAll('[data-election-subject]').forEach(btn=>btn.addEventListener('click',()=>openSubjectProgress(btn.dataset.electionSubject)));
+}
 function renderCalendar(){
  const y=viewDate.getFullYear(),m=viewDate.getMonth(); $('calendarTitle').textContent=`${y}年 ${m+1}月`;
+ renderElectionPanel('calendarElectionAlerts');
  const photographer=$('photographerFilter')?$('photographerFilter').value:'';
  const monthItems=items.filter(x=>{if(!x.date||!federationMatches(x))return false;const d=new Date(x.date+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
  const monthMeetings=items.filter(x=>{if(!x.meetingDate||!federationMatches(x))return false;const d=new Date(x.meetingDate+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m&&isPhotographerInItem(x,photographer)});
@@ -773,7 +804,11 @@ function renderCalendar(){
    const marks=[];
    if(shoots.length) marks.push(`<span class="evmark shoot" title="撮影 ${shoots.length}件">🎥 撮影${shoots.length>1?`×${shoots.length}`:''}</span>`);
    if(mtgs.length) marks.push(`<span class="evmark mtg" title="撮影前MTG ${mtgs.length}件">💬 MTG${mtgs.length>1?`×${mtgs.length}`:''}</span>`);
-   const total=shoots.length+mtgs.length;
+   const electionEvents=electionCalendarEvents(ds);
+   if(electionEvents.some(e=>e.kind==='notice'))marks.push(`<span class="evmark election-notice">📢 告示日${electionEvents.filter(e=>e.kind==='notice').length>1?'×'+electionEvents.filter(e=>e.kind==='notice').length:''}</span>`);
+   if(electionEvents.some(e=>e.kind==='stopped'))marks.push(`<span class="evmark election-notice">✅ 広告停止確認済み</span>`);
+   if(electionEvents.some(e=>e.kind==='stop'))marks.push(`<span class="evmark election-stop">⚠️ 広告停止 23時${electionEvents.filter(e=>e.kind==='stop').length>1?' ×'+electionEvents.filter(e=>e.kind==='stop').length:''}</span>`);
+   const total=shoots.length+mtgs.length+electionEvents.length;
    html+=`<button type="button" class="${cls.join(' ')}" onclick="goToDay('${ds}')"><span class="daynum">${d.getDate()}</span>${total?`<span class="evdots">${marks.join('')}</span>`:''}</button>`;
  }
  $('calendar').innerHTML=html;
@@ -804,23 +839,27 @@ function renderDaily(){
  if(!$('dailyDate').value)$('dailyDate').value=todayStr();
  document.querySelectorAll('#dailyQuickbar button').forEach(b=>b.classList.toggle('active',b.dataset.range===dailyRange));
  const dates=dailyRangeDates();
+ renderElectionPanel('dailyElectionAlerts');
  const dateSet=new Set(dates);
  const dayItems=items.filter(x=>x.date&&dateSet.has(x.date)&&federationMatches(x));
  const mtgItems=items.filter(x=>x.meetingDate&&dateSet.has(x.meetingDate)&&federationMatches(x));
  const shootCount=dayItems.length, mtgCount=mtgItems.length;
  let label='';
  if(dailyRange==='week') label='今週'; else if(dailyRange==='nextweek') label='来週'; else label=fmtDateJp(dates[0]);
- $('dailyCount').textContent=`${label}：撮影 ${shootCount}件・撮影前MTG ${mtgCount}件`;
- $('dailyEmpty').style.display=(shootCount||mtgCount)?'none':'block';
+ $('dailyCount').textContent=`${label}：撮影 ${shootCount}件・撮影前MTG ${mtgCount}件・選挙関連 ${dates.reduce((n,d)=>n+electionCalendarEvents(d).length,0)}件`;
+ const electionCount=dates.reduce((n,date)=>n+electionCalendarEvents(date).length,0);
+ $('dailyEmpty').style.display=(shootCount||mtgCount||electionCount)?'none':'block';
  $('dailyEmpty').textContent=(dailyRange==='week'||dailyRange==='nextweek')?'この期間の撮影・撮影前MTG予定はありません。':'この日の撮影・撮影前MTG予定はありません。';
  const groups=[];
  dates.forEach(date=>{
    const events=[];
    dayItems.filter(x=>x.date===date).forEach(x=>events.push({kind:'shoot',time:x.time||'',x}));
    mtgItems.filter(x=>x.meetingDate===date).forEach(x=>events.push({kind:'mtg',time:x.meetingTime||'',x}));
+   electionCalendarEvents(date).forEach(ev=>events.push({kind:ev.kind,time:(ev.kind==='stop'||ev.kind==='stopped')?'23:00':'',name:ev.name,info:ev.info}));
    if(events.length){events.sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));groups.push({date,events})}
  });
  const eventHtml=ev=>{
+   if(ev.kind==='notice'||ev.kind==='stop'||ev.kind==='stopped'){const isStop=ev.kind==='stop',isDone=ev.kind==='stopped';return `<div class="election-alert-item ${isStop?'urgent':''}" style="margin-bottom:10px"><b>${isDone?'✅ Google広告 停止確認済み':isStop?'⚠️ Google広告 停止期限（23:00）':'📢 選挙告示日'}</b><div style="margin:7px 0">${esc(ev.name)}</div><div class="small">${isDone?'確認日時：'+esc(new Date(ev.info.stopped).toLocaleString('ja-JP'))+' ／ 確認者：'+esc(ev.info.stoppedBy||'記録なし'):isStop?'告示日前日23:00までに広告停止を確認':'選挙告示日'}</div><button type="button" class="btn ghost" style="margin-top:8px" data-election-subject="${esc(ev.name)}">停止状況を確認</button></div>`;}
    const x=ev.x;
    const currentStatus=currentProgressForItem(x);
    const shootDone=(statusOrder[currentStatus]??0)>=(statusOrder['撮影完了']??2);
@@ -849,7 +888,54 @@ function buildSubjectRows(){
    return {name,status:latestStatus,finalStatus,statuses:[...new Set(normalizedStatuses)],count:related.length,next:next?`${fmtDateJp(next.date)}${next.time?' '+next.time:''}`:'-',projects:[...new Set(related.map(x=>x.project))],editors,federation,branch,subjectOrder:Number.isFinite(savedOrder)?savedOrder:999999};
  })
 }
+function electionInfo(name){
+ const related=items.filter(x=>subjectNamesForItem(x).includes(name));
+ const date=[...related].reverse().find(x=>x.electionDate)?.electionDate||'';
+ const stopped=related.map(x=>x.adsStoppedAt).filter(Boolean).sort().pop()||'';
+ const stoppedBy=[...related].reverse().find(x=>x.adsStoppedAt===stopped)?.adsStoppedBy||'';
+ if(!date)return {date:'',stopped:'',stoppedBy:'',deadline:null,level:0};
+ const deadline=new Date(date+'T00:00:00');deadline.setDate(deadline.getDate()-1);deadline.setHours(23,0,0,0);
+ const diff=deadline.getTime()-Date.now();
+ const day=86400000;
+ const noticeStart=new Date(date+'T00:00:00');noticeStart.setDate(noticeStart.getDate()-14);
+ const level=stopped||Date.now()<noticeStart.getTime()?0:diff<0?5:diff<=3600000?4:diff<=5*3600000?3:diff<=3*day?2:diff<=7*day?1:0.5;
+ return {date,stopped,stoppedBy,deadline,level,diff};
+}
+function electionAlertText(info){
+ if(info.level===5)return '期限超過・広告停止を至急確認';
+ if(info.level===4)return '緊急・停止期限まで1時間以内';
+ if(info.level===3)return '重要・本日23時までに広告停止';
+ if(info.level===2)return '警告・停止期限まで3日以内。担当者を再確認';
+ if(info.level===1)return '注意・停止期限まで7日以内。停止準備を確認';
+ return '事前通知・告示日と広告停止日を確認';
+}
+function renderElectionAlerts(){
+ const target=$('electionAlertPanel');if(!target)return;
+ const names=allSubjects().map(name=>({name,info:electionInfo(name)})).filter(x=>x.info.level>0).sort((a,b)=>b.info.level-a.info.level||a.info.deadline-b.info.deadline);
+ target.innerHTML=names.length?`<div class="election-alerts"><b>🔔 Google広告 停止アラート（${names.length}件）</b><div class="hint" style="margin:5px 0 10px">告示日の14日前から表示。広告停止確認済みの対象者は非表示になります。</div>${names.map(({name,info})=>`<div class="election-alert-item ${info.level>=3?'urgent':''}"><b>${esc(name)}</b><div>${esc(electionAlertText(info))}</div><div class="small">告示日：${esc(fmtDateJp(info.date))} ／ 停止期限：${esc(fmtDateJp(fmtDate(info.deadline)))} 23:00</div><button type="button" class="btn ghost" style="margin-top:6px" data-election-subject="${esc(name)}">停止状況を確認</button></div>`).join('')}</div>`:'';
+ target.querySelectorAll('[data-election-subject]').forEach(btn=>btn.addEventListener('click',()=>openSubjectProgress(btn.dataset.electionSubject)));
+}
+async function saveElectionSettings(){
+ const name=progressChangeSubject;const date=$('electionNoticeDate').value;const stopped=$('adsStoppedCheck').checked;
+ const related=items.filter(x=>subjectNamesForItem(x).includes(name));
+ if(!related.length)return;
+ if(stopped&&!date){alert('先に選挙告示日を入力してください。');return}
+ const existing=related.map(x=>x.adsStoppedAt).filter(Boolean).sort().pop()||'';
+ const stoppedAt=stopped?(existing||new Date().toISOString()):'';
+ const stoppedBy=stopped?(existing?(related.find(x=>x.adsStoppedAt===existing)?.adsStoppedBy||getLoginUser()):getLoginUser()):'';
+ if(!stopped&&existing&&!confirm('広告停止確認を取り消しますか？'))return;
+ const btn=$('saveElectionSettings');btn.disabled=true;
+ try{
+  for(const x of related){
+   const notes=packNotes(x.notes,x.chouseisanUrl,x.federation,x.finalStatus,x.subjectOrder,x.branch,date,stoppedAt,stoppedBy);
+   const r=await fetch(API+'?id=eq.'+encodeURIComponent(x.id),{method:'PATCH',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({notes})});
+   if(!r.ok)throw new Error(await r.text());
+  }
+  closeSheet($('progressChangeSheet'));await loadItems();
+ }catch(e){alert('告示日・広告停止状況の保存に失敗しました。\n'+(e.message||e))}finally{btn.disabled=false}
+}
 function renderProgress(){
+ renderElectionAlerts();
  const rows=buildSubjectRows().sort((a,b)=>(a.subjectOrder-b.subjectOrder)||a.name.localeCompare(b.name,'ja')); const kw=$('subjectKeyword').value.trim().toLowerCase(),fc=$('subjectCompletion').value,fs=$('subjectStatus').value,fe=$('subjectEditor').value,ff=$('subjectFederation').value,fb=$('subjectBranch').value;
  const filtered=rows.filter(r=>{
    const finalIdx=statusOrder[r.finalStatus]??9,currentIdx=statusOrder[r.status]??0,complete=currentIdx>=finalIdx;
@@ -915,7 +1001,7 @@ function openSubjectDetail(name){
    const timeline=(x.timeline||[]).length?(x.timeline||[]).map(t=>{const loc=t.location||'',typ=t.type||'',content=t.content||t.title||t.label||'';return `<div style="padding:10px 0;border-bottom:1px solid #eee"><div><b>${esc(t.time||'時間未設定')}</b>${typ?`　<span class="tag">${esc(typ)}</span>`:''}</div>${loc?`<div style="margin-top:5px">📍 ${esc(loc)}</div><div style="margin-top:5px">${mapLink(loc)}　${routeLink(loc)}</div>`:''}${content?`<div style="margin-top:5px;white-space:pre-wrap">${esc(content)}</div>`:''}</div>`;}).join(''):'<span class="small">未設定</span>';
    return `<div style="margin-bottom:18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px"><div><h3 style="margin:0 0 5px">${esc(x.project||'案件名なし')}</h3><div class="small">👤 ${esc(name)}</div></div><span class="status-badge">${esc(currentProgressForItem(x))}</span></div>
-    <div class="card" style="padding:14px;margin-bottom:10px"><b>📋 基本情報</b>${row('撮影日',val(fmtDateJp(x.date)))}${row('時間',val(x.time))}${row('案件名',val(x.project))}${row('ステータス',val(currentProgressForItem(x)))}</div>
+    <div class="card" style="padding:14px;margin-bottom:10px"><b>📋 基本情報</b>${row('撮影日',val(fmtDateJp(x.date)))}${row('時間',val(x.time))}${row('案件名',val(x.project))}${row('ステータス',val(currentProgressForItem(x)))}${row('選挙告示日',val(fmtDateJp(x.electionDate)))}${x.electionDate?row('Google広告停止期限',val(fmtDateJp(fmtDate(electionInfo(name).deadline))+' 23:00')):''}${row('広告停止確認',x.adsStoppedAt?'確認済み（'+esc(x.adsStoppedBy||'確認者不明')+'／'+esc(new Date(x.adsStoppedAt).toLocaleString('ja-JP'))+'）':'未確認')}</div>
     <div class="card" style="padding:14px;margin-bottom:10px"><b>🗓️ 事前打ち合わせ</b>${row('打ち合わせ日',val(fmtDateJp(x.meetingDate)))}${row('打ち合わせ時間',val(x.meetingTime))}${row('ミーティングURL',link(x.meetingUrl,'ミーティングURLを開く'))}</div>
     <div class="card" style="padding:14px;margin-bottom:10px"><b>👥 対象者・担当</b>${row('撮影対象者',val(x.subject))}${row('県連区分',val(x.federation))}${row('支部',val(x.branch))}${row('撮影参加者',val(x.participants))}${row('主担当',val(x.owner))}${row('動画編集担当',val(x.editor))}</div>
     <div class="card" style="padding:14px;margin-bottom:10px"><b>📍 撮影場所（メイン）</b>${row('撮影場所',val(x.location))}${x.location?`<div style="margin:8px 0 12px">${splitNames(x.location).map(place=>`<div style="margin-top:7px"><b>${esc(place)}</b><br>${mapLink(place)}　${routeLink(place)}</div>`).join('')}</div>`:''}${row('集合場所',val(x.meetingPlace))}${x.meetingPlace?`<div style="margin-top:8px">${mapLink(x.meetingPlace)}　${routeLink(x.meetingPlace)}</div>`:''}</div>
@@ -938,13 +1024,15 @@ function openSubjectProgress(name){
  const current=related.reduce((best,x)=>statusOrder[x.status]>statusOrder[best]?x.status:best,'未定');
  $('progressChangeTitle').textContent=name+'さんの進捗を変更';
  const finalStatus=[...related].reverse().find(x=>x.finalStatus)?.finalStatus||'Google広告運用中';
- $('progressStatusChoices').innerHTML=`<div style="margin-bottom:16px;padding:12px;border:1px solid #f0c48a;border-radius:14px;background:#fffaf3"><label style="margin:0 0 7px;display:block;font-weight:800">この人の完了地点</label><div class="hint" style="margin-bottom:8px">ここに到達したら進捗を100％・完了として表示します。</div><select id="subjectFinalStatus" style="width:100%;margin-bottom:8px">${Object.keys(statusOrder).map(st=>`<option ${st===finalStatus?'selected':''}>${esc(st)}</option>`).join('')}</select><button type="button" class="btn ghost full" id="saveSubjectFinalStatus">完了地点を保存</button></div>`+Object.keys(statusOrder).map(st=>`
+ const election=electionInfo(name);
+ $('progressStatusChoices').innerHTML=`<div class="election-settings"><b>🔔 選挙告示日・Google広告停止管理</b><label for="electionNoticeDate">選挙告示日</label><input type="date" id="electionNoticeDate" value="${esc(election.date)}"><div class="hint" style="margin:8px 0">${election.date?'広告停止期限：'+esc(fmtDateJp(fmtDate(election.deadline)))+' 23:00':'告示日を設定すると前日23時が停止期限になります'}</div><label class="election-check"><input type="checkbox" id="adsStoppedCheck" ${election.stopped?'checked':''}> Google広告の停止を確認済み</label>${election.stopped?'<div class="hint">確認日時：'+esc(new Date(election.stopped).toLocaleString('ja-JP'))+' ／ 確認者：'+esc(election.stoppedBy||'記録なし')+'</div>':''}<button type="button" class="btn primary full" id="saveElectionSettings" style="margin-top:10px">告示日・停止確認を保存</button></div><div style="margin-bottom:16px;padding:12px;border:1px solid #f0c48a;border-radius:14px;background:#fffaf3"><label style="margin:0 0 7px;display:block;font-weight:800">この人の完了地点</label><div class="hint" style="margin-bottom:8px">ここに到達したら進捗を100％・完了として表示します。</div><select id="subjectFinalStatus" style="width:100%;margin-bottom:8px">${Object.keys(statusOrder).map(st=>`<option ${st===finalStatus?'selected':''}>${esc(st)}</option>`).join('')}</select><button type="button" class="btn ghost full" id="saveSubjectFinalStatus">完了地点を保存</button></div>`+Object.keys(statusOrder).map(st=>`
    <button type="button" class="status-choice ${st===current?'current':''}" data-status="${esc(st)}">
      <span class="check">${st===current?'✓':'○'}</span>
      <span class="status-label">${esc(st)}</span>
      ${st===current?'<span class="current-label">現在</span>':''}
    </button>`).join('');
  $('progressStatusChoices').querySelectorAll('.status-choice').forEach(btn=>btn.addEventListener('click',()=>changeSubjectProgress(btn.dataset.status)));
+ $('saveElectionSettings').addEventListener('click',saveElectionSettings);
  $('saveSubjectFinalStatus').addEventListener('click',()=>setSubjectFinalStatus($('subjectFinalStatus').value));
  openSheet($('progressChangeSheet'));
 }
@@ -955,7 +1043,7 @@ async function setSubjectFinalStatus(finalStatus){
  try{
    for(const x of related){
      const url=API+'?id=eq.'+encodeURIComponent(x.id);
-     const notes=packNotes(x.notes,x.chouseisanUrl,x.federation,finalStatus,x.subjectOrder,x.branch)||null;
+     const notes=packNotes(x.notes,x.chouseisanUrl,x.federation,finalStatus,x.subjectOrder,x.branch,x.electionDate,x.adsStoppedAt,x.adsStoppedBy)||null;
      const rr=await fetch(url,{method:'PATCH',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({notes})});
      if(!rr.ok)throw new Error(await rr.text());
    }
@@ -1301,6 +1389,9 @@ $('loginPasscode').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginSta
   if(nameToUse && isAuthed()){enterApp(nameToUse);return}
   showLoginScreen(nameToUse);
 })();
+let electionLastDay=todayStr();
+setInterval(()=>{if(document.hidden)return;const day=todayStr();if(day!==electionLastDay){electionLastDay=day;renderAll()}else{renderElectionAlerts();renderElectionPanel('calendarElectionAlerts');renderElectionPanel('dailyElectionAlerts')}},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){electionLastDay=todayStr();renderAll()}});
 </script>
 </body>
 </html>
