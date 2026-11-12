@@ -242,7 +242,7 @@ textarea{min-height:76px;resize:vertical}
 
 @media(max-width:520px){.progresscard-top{grid-template-columns:minmax(0,1fr) minmax(150px,49%)}.progress-status-large{font-size:17px;min-height:86px}}
 .share-custom-fields{margin:10px 0;padding:12px;background:#fff;border:1px solid #fed7aa;border-radius:12px;max-height:260px;overflow:auto}.share-custom-fields .share-group{font-size:12px;font-weight:900;color:#9a3412;margin:12px 0 6px}.share-custom-fields .share-group:first-child{margin-top:0}.share-custom-fields label{display:flex;align-items:center;gap:9px;margin:0;padding:7px 3px;font-size:13px;font-weight:600}.share-custom-fields input{width:18px;height:18px;min-height:18px;accent-color:#f97316;-webkit-appearance:checkbox;appearance:checkbox;flex:none}.share-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:14px}.share-actions .btn{font-size:13px;padding:10px 6px}
-.election-alerts{border:2px solid #f59e0b;border-radius:14px;padding:13px;background:#fffbeb;margin-bottom:14px}.election-alert-item{background:white;border:1px solid #fcd34d;border-radius:10px;padding:10px;margin:8px 0;font-size:13px}.election-alert-item.urgent{border:2px solid #dc2626;background:#fff1f2;box-shadow:0 2px 8px #dc262622}.election-alert-item .alert-name{font-size:16px;font-weight:900}.election-alert-item .alert-message{font-size:15px;font-weight:800;margin:7px 0}.election-alert-item.urgent .alert-message{font-size:19px;color:#b91c1c;line-height:1.4}.election-alert-item .alert-deadline{font-size:17px;font-weight:900;margin:8px 0;color:#9a3412}.election-alert-item.urgent .alert-deadline{font-size:23px;color:#b91c1c;line-height:1.35}.election-alert-item .alert-notice{font-size:12px;color:#6b7280}.election-alert-item.overdue{background:#fee2e2;border-color:#991b1b}.election-alert-item.overdue .alert-message{font-size:22px;color:#991b1b}@media(max-width:540px){.election-alert-item.urgent .alert-deadline{font-size:21px}}.election-settings{border:2px solid #f59e0b;background:#fffbeb;border-radius:14px;padding:13px;margin-bottom:16px}.election-settings label{display:block;margin-top:12px}.election-settings .election-check{display:flex;gap:10px;align-items:center;font-weight:700}.election-check input{width:20px;height:20px;min-height:20px;accent-color:#ea580c}
+.election-alerts{border:2px solid #f59e0b;border-radius:14px;padding:13px;background:#fffbeb;margin-bottom:14px}.election-alert-item{background:white;border:1px solid #fcd34d;border-radius:10px;padding:10px;margin:8px 0;font-size:13px}.election-alert-item.urgent{border:2px solid #dc2626;background:#fff1f2;box-shadow:0 2px 8px #dc262622}.election-alert-item .alert-name{font-size:16px;font-weight:900}.election-alert-item .alert-message{font-size:15px;font-weight:800;margin:7px 0}.election-alert-item.urgent .alert-message{font-size:19px;color:#b91c1c;line-height:1.4}.election-alert-item .alert-deadline{font-size:17px;font-weight:900;margin:8px 0;color:#9a3412}.election-alert-item.urgent .alert-deadline{font-size:23px;color:#b91c1c;line-height:1.35}.election-alert-item .alert-notice{font-size:12px;color:#6b7280}.election-alert-item.overdue{background:#fee2e2;border-color:#991b1b}.election-alert-item.overdue .alert-message{font-size:22px;color:#991b1b}@media(max-width:540px){.election-alert-item.urgent .alert-deadline{font-size:21px}}.election-countdown{font-size:clamp(22px,5vw,32px);font-weight:900;color:#b91c1c;letter-spacing:.5px;font-variant-numeric:tabular-nums;margin:10px 0;padding:10px;background:#fee2e2;border-radius:10px;text-align:center}.election-countdown.expired{background:#fecaca;color:#991b1b}.election-settings{border:2px solid #f59e0b;background:#fffbeb;border-radius:14px;padding:13px;margin-bottom:16px}.election-settings label{display:block;margin-top:12px}.election-settings .election-check{display:flex;gap:10px;align-items:center;font-weight:700}.election-check input[type="checkbox"]{width:24px;height:24px;min-height:24px;padding:0;flex:0 0 24px;-webkit-appearance:checkbox;appearance:checkbox;accent-color:#ea580c;cursor:pointer}.election-check{cursor:pointer}.election-check:has(input:checked){color:#15803d}.election-confirm-preview{margin:9px 0 0;padding:10px;border-radius:9px;background:#fff7ed;font-size:13px;line-height:1.6}
 .election-notice{background:#dbeafe;color:#1d4ed8}.election-stop{background:#fee2e2;color:#b91c1c}
 </style>
 </head>
@@ -863,7 +863,7 @@ function renderDaily(){
    if(events.length){events.sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));groups.push({date,events})}
  });
  const eventHtml=ev=>{
-   if(ev.kind==='notice'||ev.kind==='stop'||ev.kind==='stopped'){const isStop=ev.kind==='stop',isDone=ev.kind==='stopped';return `<div class="election-alert-item ${isStop?'urgent':''}" style="margin-bottom:10px"><b class="alert-message">${isDone?'✅ Google広告 停止確認済み':isStop?'⚠️ Google広告 停止期限':'📢 選挙告示日'}</b>${isStop?'<div class="alert-deadline">23:00までに停止</div>':''}<div style="margin:7px 0">${esc(ev.name)}</div><div class="small">${isDone?'確認日時：'+esc(new Date(ev.info.stopped).toLocaleString('ja-JP'))+' ／ 停止確認者：'+esc(ev.info.stoppedBy||'記録なし'):isStop?'告示日前日23:00までに広告停止を確認':'選挙告示日'}</div><button type="button" class="btn ghost" style="margin-top:8px" data-election-subject="${esc(ev.name)}">停止状況を確認</button></div>`;}
+   if(ev.kind==='notice'||ev.kind==='stop'||ev.kind==='stopped'){const isStop=ev.kind==='stop',isDone=ev.kind==='stopped';return `<div class="election-alert-item ${isStop?'urgent':''}" style="margin-bottom:10px"><b class="alert-message">${isDone?'✅ Google広告 停止確認済み':isStop?'⚠️ Google広告 停止期限':'📢 選挙告示日'}</b>${isStop?'<div class="alert-deadline">23:00までに停止</div>':''}${isStop&&ev.info.diff>0&&ev.info.diff<=86400000?`<div class="election-countdown" data-election-countdown="${ev.info.deadline.getTime()}">${esc(electionCountdownText(ev.info.deadline))}</div>`:''}<div style="margin:7px 0">${esc(ev.name)}</div><div class="small">${isDone?'確認日時：'+esc(new Date(ev.info.stopped).toLocaleString('ja-JP'))+' ／ 停止確認者：'+esc(ev.info.stoppedBy||'記録なし'):isStop?'告示日前日23:00までに広告停止を確認':'選挙告示日'}</div><button type="button" class="btn ghost" style="margin-top:8px" data-election-subject="${esc(ev.name)}">停止状況を確認</button></div>`;}
    const x=ev.x;
    const currentStatus=currentProgressForItem(x);
    const shootDone=(statusOrder[currentStatus]??0)>=(statusOrder['撮影完了']??2);
@@ -899,24 +899,52 @@ function electionInfo(name){
  const stoppedBy=[...related].reverse().find(x=>x.adsStoppedAt===stopped)?.adsStoppedBy||'';
  if(!date)return {date:'',stopped:'',stoppedBy:'',deadline:null,level:0};
  const deadline=new Date(date+'T00:00:00');deadline.setDate(deadline.getDate()-1);deadline.setHours(23,0,0,0);
- const diff=deadline.getTime()-Date.now();
- const day=86400000;
+ const now=new Date(),diff=deadline.getTime()-now.getTime();
  const noticeStart=new Date(date+'T00:00:00');noticeStart.setDate(noticeStart.getDate()-14);
- const level=stopped||Date.now()<noticeStart.getTime()?0:diff<0?5:diff<=3600000?4:diff<=5*3600000?3:diff<=3*day?2:diff<=7*day?1:0.5;
- return {date,stopped,stoppedBy,deadline,level,diff};
+ // 暦日単位で毎日1日ずつ減算（期限当日は0日）
+ const todayMidnight=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ const deadlineMidnight=new Date(deadline.getFullYear(),deadline.getMonth(),deadline.getDate());
+ const calendarDays=Math.round((Date.UTC(deadlineMidnight.getFullYear(),deadlineMidnight.getMonth(),deadlineMidnight.getDate())-Date.UTC(todayMidnight.getFullYear(),todayMidnight.getMonth(),todayMidnight.getDate()))/86400000);
+ let level=0;
+ if(!stopped&&now>=noticeStart){
+  if(diff<=0)level=5;
+  else if(calendarDays===0&&now.getHours()>=22)level=4;
+  else if(calendarDays===0&&now.getHours()>=18)level=3;
+  else if(calendarDays<=3)level=2;
+  else if(calendarDays<=7)level=1;
+  else level=0.5;
+ }
+ return {date,stopped,stoppedBy,deadline,level,diff,calendarDays};
 }
 function electionAlertText(info){
- if(info.level===5)return '期限超過・広告停止を至急確認';
- if(info.level===4)return '緊急・停止期限まで1時間以内';
- if(info.level===3)return '重要・本日23時までに広告停止';
- if(info.level===2)return '警告・停止期限まで3日以内。担当者を再確認';
- if(info.level===1)return '注意・停止期限まで7日以内。停止準備を確認';
- return '事前通知・告示日と広告停止日を確認';
+ if(info.level===5)return '停止期限超過！至急、広告の停止状況を確認してください';
+ if(info.level===4)return '緊急！本日23:00が広告停止期限です';
+ if(info.level===3)return '重要！本日23:00までにGoogle広告を停止してください';
+ if(info.calendarDays===0)return '本日23:00までにGoogle広告を停止してください';
+ if(info.calendarDays===1)return '広告停止期限は明日です。停止準備を確認してください';
+ if(info.calendarDays<=3)return `広告停止期限まであと${info.calendarDays}日。停止準備を確認してください`;
+ if(info.calendarDays<=7)return `広告停止期限まであと${info.calendarDays}日。停止予定を確認してください`;
+ return `広告停止期限まであと${info.calendarDays}日。告示日と停止日を確認してください`;
+}
+function electionCountdownText(deadline){
+ const remaining=deadline.getTime()-Date.now();
+ if(remaining<=0)return '停止期限を超過しています';
+ const seconds=Math.floor(remaining/1000);
+ const h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),sec=seconds%60;
+ return `停止まで ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+function updateElectionCountdowns(){
+ document.querySelectorAll('[data-election-countdown]').forEach(el=>{
+  const deadline=new Date(Number(el.dataset.electionCountdown));
+  el.textContent=electionCountdownText(deadline);
+  el.classList.toggle('expired',Date.now()>=deadline.getTime());
+ });
 }
 function electionAlertCard(name,info){
- const urgent=info.level>=3,overdue=info.level===5;
+ const urgent=info.level>=3||info.calendarDays===0,overdue=info.level===5;
  const deadlineText=fmtDateJp(fmtDate(info.deadline))+' 23:00';
- return `<div class="election-alert-item ${urgent?'urgent':''} ${overdue?'overdue':''}"><div class="alert-name">${esc(name)}</div><div class="alert-message">${urgent?'⚠️ ':''}${esc(electionAlertText(info))}</div><div class="alert-notice">選挙告示日：${esc(fmtDateJp(info.date))}</div><div class="alert-deadline">広告停止期限：${esc(deadlineText)}</div><button type="button" class="btn ghost" style="margin-top:7px" data-election-subject="${esc(name)}">停止状況を確認</button></div>`;
+ const countdown=info.diff>0&&info.diff<=86400000?`<div class="election-countdown" data-election-countdown="${info.deadline.getTime()}">${esc(electionCountdownText(info.deadline))}</div>`:'';
+ return `<div class="election-alert-item ${urgent?'urgent':''} ${overdue?'overdue':''}"><div class="alert-name">${esc(name)}</div><div class="alert-message">${urgent?'⚠️ ':''}${esc(electionAlertText(info))}</div><div class="alert-notice">選挙告示日：${esc(fmtDateJp(info.date))}</div><div class="alert-deadline">広告停止期限：${esc(deadlineText)}</div>${countdown}<button type="button" class="btn ghost" style="margin-top:7px" data-election-subject="${esc(name)}">停止状況を確認</button></div>`;
 }
 function renderElectionAlerts(){
  const target=$('electionAlertPanel');if(!target)return;
@@ -1036,13 +1064,16 @@ function openSubjectProgress(name){
  $('progressChangeTitle').textContent=name+'さんの進捗を変更';
  const finalStatus=[...related].reverse().find(x=>x.finalStatus)?.finalStatus||'Google広告運用中';
  const election=electionInfo(name);
- $('progressStatusChoices').innerHTML=`<div class="election-settings"><b>🔔 選挙告示日・Google広告停止管理</b><label for="electionNoticeDate">選挙告示日</label><input type="date" id="electionNoticeDate" value="${esc(election.date)}"><div class="hint" style="margin:8px 0">${election.date?'広告停止期限：'+esc(fmtDateJp(fmtDate(election.deadline)))+' 23:00':'告示日を設定すると前日23時が停止期限になります'}</div><label class="election-check"><input type="checkbox" id="adsStoppedCheck" ${election.stopped?'checked':''}> Google広告の停止を確認済み</label>${election.stopped?'<div class="hint">確認日時：'+esc(new Date(election.stopped).toLocaleString('ja-JP'))+' ／ 確認者：'+esc(election.stoppedBy||'記録なし')+'</div>':''}<button type="button" class="btn primary full" id="saveElectionSettings" style="margin-top:10px">告示日・停止確認を保存</button></div><div style="margin-bottom:16px;padding:12px;border:1px solid #f0c48a;border-radius:14px;background:#fffaf3"><label style="margin:0 0 7px;display:block;font-weight:800">この人の完了地点</label><div class="hint" style="margin-bottom:8px">ここに到達したら進捗を100％・完了として表示します。</div><select id="subjectFinalStatus" style="width:100%;margin-bottom:8px">${Object.keys(statusOrder).map(st=>`<option ${st===finalStatus?'selected':''}>${esc(st)}</option>`).join('')}</select><button type="button" class="btn ghost full" id="saveSubjectFinalStatus">完了地点を保存</button></div>`+Object.keys(statusOrder).map(st=>`
+ $('progressStatusChoices').innerHTML=`<div class="election-settings"><b>🔔 選挙告示日・Google広告停止管理</b><label for="electionNoticeDate">選挙告示日</label><input type="date" id="electionNoticeDate" value="${esc(election.date)}"><div class="hint" style="margin:8px 0">${election.date?'広告停止期限：'+esc(fmtDateJp(fmtDate(election.deadline)))+' 23:00':'告示日を設定すると前日23時が停止期限になります'}</div><label class="election-check"><input type="checkbox" id="adsStoppedCheck" ${election.stopped?'checked':''}> Google広告の停止を確認済み</label>${election.stopped?'<div class="hint">確認日時：'+esc(new Date(election.stopped).toLocaleString('ja-JP'))+' ／ 停止確認者：'+esc(election.stoppedBy||'記録なし')+'</div>':''}<div class="election-confirm-preview" id="electionConfirmPreview"></div><button type="button" class="btn primary full" id="saveElectionSettings" style="margin-top:10px">告示日・停止確認を保存</button></div><div style="margin-bottom:16px;padding:12px;border:1px solid #f0c48a;border-radius:14px;background:#fffaf3"><label style="margin:0 0 7px;display:block;font-weight:800">この人の完了地点</label><div class="hint" style="margin-bottom:8px">ここに到達したら進捗を100％・完了として表示します。</div><select id="subjectFinalStatus" style="width:100%;margin-bottom:8px">${Object.keys(statusOrder).map(st=>`<option ${st===finalStatus?'selected':''}>${esc(st)}</option>`).join('')}</select><button type="button" class="btn ghost full" id="saveSubjectFinalStatus">完了地点を保存</button></div>`+Object.keys(statusOrder).map(st=>`
    <button type="button" class="status-choice ${st===current?'current':''}" data-status="${esc(st)}">
      <span class="check">${st===current?'✓':'○'}</span>
      <span class="status-label">${esc(st)}</span>
      ${st===current?'<span class="current-label">現在</span>':''}
    </button>`).join('');
  $('progressStatusChoices').querySelectorAll('.status-choice').forEach(btn=>btn.addEventListener('click',()=>changeSubjectProgress(btn.dataset.status)));
+ const updateElectionConfirmPreview=()=>{const checked=$('adsStoppedCheck').checked;const preview=$('electionConfirmPreview');const user=getLoginUser();preview.textContent=checked?'保存すると停止確認者「'+(user||'ログイン名未設定')+'」と確認日時を記録します。実際に広告を停止したことを確認してから保存してください。':'広告停止は未確認です。チェックを入れて保存すると確認記録が残ります。';};
+ $('adsStoppedCheck').addEventListener('change',updateElectionConfirmPreview);
+ updateElectionConfirmPreview();
  $('saveElectionSettings').addEventListener('click',saveElectionSettings);
  $('saveSubjectFinalStatus').addEventListener('click',()=>setSubjectFinalStatus($('subjectFinalStatus').value));
  openSheet($('progressChangeSheet'));
@@ -1425,6 +1456,7 @@ $('loginPasscode').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginSta
   showLoginScreen(nameToUse);
 })();
 let electionLastDay=todayStr();
+setInterval(()=>{if(!document.hidden)updateElectionCountdowns()},1000);
 setInterval(()=>{if(document.hidden)return;const day=todayStr();if(day!==electionLastDay){electionLastDay=day;renderAll()}else{renderElectionAlerts();renderElectionPanel('calendarElectionAlerts');renderElectionPanel('dailyElectionAlerts')}},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){electionLastDay=todayStr();renderAll()}});
 </script>
