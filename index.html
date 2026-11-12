@@ -242,7 +242,7 @@ textarea{min-height:76px;resize:vertical}
 
 @media(max-width:520px){.progresscard-top{grid-template-columns:minmax(0,1fr) minmax(150px,49%)}.progress-status-large{font-size:17px;min-height:86px}}
 .share-custom-fields{margin:10px 0;padding:12px;background:#fff;border:1px solid #fed7aa;border-radius:12px;max-height:260px;overflow:auto}.share-custom-fields .share-group{font-size:12px;font-weight:900;color:#9a3412;margin:12px 0 6px}.share-custom-fields .share-group:first-child{margin-top:0}.share-custom-fields label{display:flex;align-items:center;gap:9px;margin:0;padding:7px 3px;font-size:13px;font-weight:600}.share-custom-fields input{width:18px;height:18px;min-height:18px;accent-color:#f97316;-webkit-appearance:checkbox;appearance:checkbox;flex:none}.share-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:14px}.share-actions .btn{font-size:13px;padding:10px 6px}
-.election-alerts{border:2px solid #f59e0b;border-radius:14px;padding:13px;background:#fffbeb;margin-bottom:14px}.election-alert-item{background:white;border:1px solid #fcd34d;border-radius:10px;padding:10px;margin:8px 0;font-size:13px}.election-alert-item.urgent{border-color:#ef4444;background:#fef2f2}.election-settings{border:2px solid #f59e0b;background:#fffbeb;border-radius:14px;padding:13px;margin-bottom:16px}.election-settings label{display:block;margin-top:12px}.election-settings .election-check{display:flex;gap:10px;align-items:center;font-weight:700}.election-check input{width:20px;height:20px;min-height:20px;accent-color:#ea580c}
+.election-alerts{border:2px solid #f59e0b;border-radius:14px;padding:13px;background:#fffbeb;margin-bottom:14px}.election-alert-item{background:white;border:1px solid #fcd34d;border-radius:10px;padding:10px;margin:8px 0;font-size:13px}.election-alert-item.urgent{border:2px solid #dc2626;background:#fff1f2;box-shadow:0 2px 8px #dc262622}.election-alert-item .alert-name{font-size:16px;font-weight:900}.election-alert-item .alert-message{font-size:15px;font-weight:800;margin:7px 0}.election-alert-item.urgent .alert-message{font-size:19px;color:#b91c1c;line-height:1.4}.election-alert-item .alert-deadline{font-size:17px;font-weight:900;margin:8px 0;color:#9a3412}.election-alert-item.urgent .alert-deadline{font-size:23px;color:#b91c1c;line-height:1.35}.election-alert-item .alert-notice{font-size:12px;color:#6b7280}.election-alert-item.overdue{background:#fee2e2;border-color:#991b1b}.election-alert-item.overdue .alert-message{font-size:22px;color:#991b1b}@media(max-width:540px){.election-alert-item.urgent .alert-deadline{font-size:21px}}.election-settings{border:2px solid #f59e0b;background:#fffbeb;border-radius:14px;padding:13px;margin-bottom:16px}.election-settings label{display:block;margin-top:12px}.election-settings .election-check{display:flex;gap:10px;align-items:center;font-weight:700}.election-check input{width:20px;height:20px;min-height:20px;accent-color:#ea580c}
 .election-notice{background:#dbeafe;color:#1d4ed8}.election-stop{background:#fee2e2;color:#b91c1c}
 </style>
 </head>
@@ -369,7 +369,7 @@ textarea{min-height:76px;resize:vertical}
         <div class="form-section-title">📋 基本情報</div>
         <div class="row-date"><div><label>撮影日（任意）</label><input type="date" id="date"></div><div><label>時間</label><input type="time" id="time" step="300"></div></div>
         <label>案件名 *</label><input id="project" placeholder="例：候補者撮影" required>
-        <label for="formElectionDate">選挙告示日（対象者ごと）</label>
+        <label for="formElectionDate">選挙告示日</label>
         <input type="date" id="formElectionDate">
         <div class="hint" id="formElectionDeadline">告示日を設定すると、前日の23:00がGoogle広告停止期限になります。</div>
         <label>ステータス</label><select id="status"><option>未定</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>編集完了</option><option>本部承認済</option><option>動画データ受渡済（サムネ含む）</option><option>選管動画確認済</option><option>Google広告運用中</option></select>
@@ -788,7 +788,7 @@ function renderElectionPanel(targetId){
  const names=allSubjects().map(name=>({name,info:electionInfo(name)}))
   .filter(x=>x.info.level>0&&items.some(item=>subjectNamesForItem(item).includes(x.name)&&federationMatches(item)))
   .sort((a,b)=>b.info.level-a.info.level||a.info.deadline-b.info.deadline);
- target.innerHTML=names.length?`<div class="election-alerts"><b>🔔 Google広告 停止アラート（${names.length}件）</b><div class="hint" style="margin:5px 0 8px">告示日の14日前から表示。停止確認済みは非表示です。</div>${names.map(({name,info})=>`<div class="election-alert-item ${info.level>=3?'urgent':''}"><b>${esc(name)}</b><div>${esc(electionAlertText(info))}</div><div class="small">告示日：${esc(fmtDateJp(info.date))} ／ 停止期限：${esc(fmtDateJp(fmtDate(info.deadline)))} 23:00</div><button type="button" class="btn ghost" style="margin-top:6px" data-election-subject="${esc(name)}">停止状況を確認</button></div>`).join('')}</div>`:'';
+ target.innerHTML=names.length?`<div class="election-alerts"><b>🔔 Google広告 停止アラート（${names.length}件）</b><div class="hint" style="margin:5px 0 8px">告示日の14日前から表示。停止確認済みは非表示です。</div>${names.map(({name,info})=>electionAlertCard(name,info)).join('')}</div>`:'';
  target.querySelectorAll('[data-election-subject]').forEach(btn=>btn.addEventListener('click',()=>openSubjectProgress(btn.dataset.electionSubject)));
 }
 function renderCalendar(){
@@ -863,7 +863,7 @@ function renderDaily(){
    if(events.length){events.sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));groups.push({date,events})}
  });
  const eventHtml=ev=>{
-   if(ev.kind==='notice'||ev.kind==='stop'||ev.kind==='stopped'){const isStop=ev.kind==='stop',isDone=ev.kind==='stopped';return `<div class="election-alert-item ${isStop?'urgent':''}" style="margin-bottom:10px"><b>${isDone?'✅ Google広告 停止確認済み':isStop?'⚠️ Google広告 停止期限（23:00）':'📢 選挙告示日'}</b><div style="margin:7px 0">${esc(ev.name)}</div><div class="small">${isDone?'確認日時：'+esc(new Date(ev.info.stopped).toLocaleString('ja-JP'))+' ／ 確認者：'+esc(ev.info.stoppedBy||'記録なし'):isStop?'告示日前日23:00までに広告停止を確認':'選挙告示日'}</div><button type="button" class="btn ghost" style="margin-top:8px" data-election-subject="${esc(ev.name)}">停止状況を確認</button></div>`;}
+   if(ev.kind==='notice'||ev.kind==='stop'||ev.kind==='stopped'){const isStop=ev.kind==='stop',isDone=ev.kind==='stopped';return `<div class="election-alert-item ${isStop?'urgent':''}" style="margin-bottom:10px"><b class="alert-message">${isDone?'✅ Google広告 停止確認済み':isStop?'⚠️ Google広告 停止期限':'📢 選挙告示日'}</b>${isStop?'<div class="alert-deadline">23:00までに停止</div>':''}<div style="margin:7px 0">${esc(ev.name)}</div><div class="small">${isDone?'確認日時：'+esc(new Date(ev.info.stopped).toLocaleString('ja-JP'))+' ／ 停止確認者：'+esc(ev.info.stoppedBy||'記録なし'):isStop?'告示日前日23:00までに広告停止を確認':'選挙告示日'}</div><button type="button" class="btn ghost" style="margin-top:8px" data-election-subject="${esc(ev.name)}">停止状況を確認</button></div>`;}
    const x=ev.x;
    const currentStatus=currentProgressForItem(x);
    const shootDone=(statusOrder[currentStatus]??0)>=(statusOrder['撮影完了']??2);
@@ -913,10 +913,15 @@ function electionAlertText(info){
  if(info.level===1)return '注意・停止期限まで7日以内。停止準備を確認';
  return '事前通知・告示日と広告停止日を確認';
 }
+function electionAlertCard(name,info){
+ const urgent=info.level>=3,overdue=info.level===5;
+ const deadlineText=fmtDateJp(fmtDate(info.deadline))+' 23:00';
+ return `<div class="election-alert-item ${urgent?'urgent':''} ${overdue?'overdue':''}"><div class="alert-name">${esc(name)}</div><div class="alert-message">${urgent?'⚠️ ':''}${esc(electionAlertText(info))}</div><div class="alert-notice">選挙告示日：${esc(fmtDateJp(info.date))}</div><div class="alert-deadline">広告停止期限：${esc(deadlineText)}</div><button type="button" class="btn ghost" style="margin-top:7px" data-election-subject="${esc(name)}">停止状況を確認</button></div>`;
+}
 function renderElectionAlerts(){
  const target=$('electionAlertPanel');if(!target)return;
  const names=allSubjects().map(name=>({name,info:electionInfo(name)})).filter(x=>x.info.level>0).sort((a,b)=>b.info.level-a.info.level||a.info.deadline-b.info.deadline);
- target.innerHTML=names.length?`<div class="election-alerts"><b>🔔 Google広告 停止アラート（${names.length}件）</b><div class="hint" style="margin:5px 0 10px">告示日の14日前から表示。広告停止確認済みの対象者は非表示になります。</div>${names.map(({name,info})=>`<div class="election-alert-item ${info.level>=3?'urgent':''}"><b>${esc(name)}</b><div>${esc(electionAlertText(info))}</div><div class="small">告示日：${esc(fmtDateJp(info.date))} ／ 停止期限：${esc(fmtDateJp(fmtDate(info.deadline)))} 23:00</div><button type="button" class="btn ghost" style="margin-top:6px" data-election-subject="${esc(name)}">停止状況を確認</button></div>`).join('')}</div>`:'';
+ target.innerHTML=names.length?`<div class="election-alerts"><b>🔔 Google広告 停止アラート（${names.length}件）</b><div class="hint" style="margin:5px 0 10px">告示日の14日前から表示。広告停止確認済みの対象者は非表示になります。</div>${names.map(({name,info})=>electionAlertCard(name,info)).join('')}</div>`:'';
  target.querySelectorAll('[data-election-subject]').forEach(btn=>btn.addEventListener('click',()=>openSubjectProgress(btn.dataset.electionSubject)));
 }
 async function saveElectionSettings(){
