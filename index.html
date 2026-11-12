@@ -172,17 +172,18 @@ textarea{min-height:76px;resize:vertical}
 .timeline-editor{border:1px solid #fed7aa;border-radius:12px;padding:10px;background:#fffaf5}
 .timeline-row{border:1px solid #fed7aa;border-radius:10px;padding:8px;margin-bottom:8px;background:#fff}
 .timeline-row:last-child{margin-bottom:0}
-.timeline-row-top{display:grid;grid-template-columns:92px minmax(0,1fr) 38px 38px 38px;gap:6px;align-items:center;margin-bottom:6px}
+.timeline-row-top{display:grid;grid-template-columns:136px minmax(0,1fr) 38px 38px 38px;gap:6px;align-items:center;margin-bottom:6px}
 .timeline-row .tl-type{width:100%;margin-bottom:6px;color:#a8a29e;font-weight:500}
 .timeline-row .tl-type.has-value{color:#9a3412;font-weight:700}
 .timeline-row input{margin:0;padding:9px 8px}
 .timeline-row input::placeholder{color:#a8a29e;opacity:1}
 .timeline-row .time-field{position:relative;min-width:0}
-.timeline-row .time-field .tl-time{width:100%;position:relative;z-index:1;background:transparent}
-.timeline-row .time-field .time-placeholder{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#a8a29e;font-size:14px;pointer-events:none;z-index:3;background:#fff;padding-right:4px}
+.timeline-row .time-field .tl-time{width:100%;min-width:0;position:relative;z-index:1;background:#fff;font-size:15px;padding:9px 5px;color:#292524}
+.timeline-row .time-field .time-placeholder{display:none}
 .timeline-row input::placeholder{color:#a8a29e!important;opacity:1!important;-webkit-text-fill-color:#a8a29e}
 .timeline-row select.tl-type:invalid{color:#a8a29e}
 .timeline-row .time-field.has-value .time-placeholder{display:none}
+@media(max-width:540px){.timeline-row-top{grid-template-columns:minmax(136px,42%) minmax(0,1fr) repeat(3,36px);row-gap:8px}.timeline-row-top .time-field{grid-column:1;grid-row:1;min-width:0}.timeline-row-top .tl-location{grid-column:2 / 6;grid-row:1;min-width:0}.timeline-row-top .move-up{grid-column:3;grid-row:2}.timeline-row-top .move-down{grid-column:4;grid-row:2}.timeline-row-top .remove-step{grid-column:5;grid-row:2}}
 .timeline-row .tl-content{width:100%}
 .move-step,.remove-step{padding:9px 0;border-radius:8px;min-height:auto;font-weight:900}.move-step{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}.remove-step{background:#fee2e2;color:#b91c1c;border:0}
 .add-step{margin-top:8px;width:100%;background:#ffedd5;color:#9a3412;border:1px dashed #fb923c;border-radius:10px}
@@ -368,6 +369,9 @@ textarea{min-height:76px;resize:vertical}
         <div class="form-section-title">📋 基本情報</div>
         <div class="row-date"><div><label>撮影日（任意）</label><input type="date" id="date"></div><div><label>時間</label><input type="time" id="time" step="300"></div></div>
         <label>案件名 *</label><input id="project" placeholder="例：候補者撮影" required>
+        <label for="formElectionDate">選挙告示日（対象者ごと）</label>
+        <input type="date" id="formElectionDate">
+        <div class="hint" id="formElectionDeadline">告示日を設定すると、前日の23:00がGoogle広告停止期限になります。</div>
         <label>ステータス</label><select id="status"><option>未定</option><option>撮影日程調整中</option><option>撮影日確定</option><option>撮影完了</option><option>編集中</option><option>編集完了</option><option>本部承認済</option><option>動画データ受渡済（サムネ含む）</option><option>選管動画確認済</option><option>Google広告運用中</option></select>
       </div>
 
@@ -639,7 +643,7 @@ function chips(s){const a=splitNames(s);return a.length?`<div class="chips">${a.
 function mapHref(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place)}
 const SHOOT_TYPES=['メイン動画','本人ありBロール（エキストラ込み）','本人なし風景Bロール'];
 function timelineRows(){return [...document.querySelectorAll('#timelineEditor .timeline-row')].map(r=>({time:r.querySelector('.tl-time').value,location:r.querySelector('.tl-location').value.trim(),type:r.querySelector('.tl-type').value,content:r.querySelector('.tl-content').value.trim()})).filter(v=>v.time||v.location||v.type||v.content)}
-function addTimelineRow(step={}){const row=document.createElement('div');row.className='timeline-row';row.innerHTML=`<div class="timeline-row-top"><div class="time-field ${step.time?'has-value':''}"><span class="time-placeholder">時間</span><input type="time" class="tl-time" aria-label="時間" step="300" value="${esc(step.time||'')}"></div><input class="tl-location" placeholder="場所" aria-label="場所" value="${esc(step.location||'')}"><button type="button" class="move-step move-up" title="上へ移動" aria-label="上へ移動">↑</button><button type="button" class="move-step move-down" title="下へ移動" aria-label="下へ移動">↓</button><button type="button" class="remove-step" title="削除">×</button></div><div class="map-actions" style="margin-bottom:6px"><button type="button" class="btn ghost tl-map-btn" style="flex:1;font-size:12px;padding:8px">🗺️ 地図を見る</button><button type="button" class="btn ghost tl-route-btn" style="flex:1;font-size:12px;padding:8px">🚗 ルート</button></div><select class="tl-type ${step.type?'has-value':''}" aria-label="撮影区分"><option value="">撮影区分</option>${SHOOT_TYPES.map(t=>`<option value="${esc(t)}" ${step.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select><input class="tl-content" placeholder="撮影内容" value="${esc(step.content||'')}">`;row.querySelector('.tl-time').addEventListener('change',e=>e.target.closest('.time-field').classList.toggle('has-value',!!e.target.value));row.querySelector('.move-up').onclick=()=>{const prev=row.previousElementSibling;if(prev)row.parentNode.insertBefore(row,prev)};row.querySelector('.move-down').onclick=()=>{const next=row.nextElementSibling;if(next)row.parentNode.insertBefore(next,row)};row.querySelector('.remove-step').onclick=()=>{row.remove();if(!document.querySelector('#timelineEditor .timeline-row'))addTimelineRow()};row.querySelector('.tl-type').addEventListener('change',e=>e.target.classList.toggle('has-value',!!e.target.value));row.querySelector('.tl-map-btn').addEventListener('click',()=>{const loc=row.querySelector('.tl-location').value.trim();if(!loc){alert('場所を入力してください。');return}window.open(mapHref(loc),'_blank','noopener')});row.querySelector('.tl-route-btn').addEventListener('click',()=>{const loc=row.querySelector('.tl-location').value.trim();if(!loc){alert('場所を入力してください。');return}window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(loc)+'&travelmode=driving','_blank','noopener')});$('timelineEditor').appendChild(row)}
+function addTimelineRow(step={}){const row=document.createElement('div');row.className='timeline-row';row.innerHTML=`<div class="timeline-row-top"><div class="time-field ${step.time?'has-value':''}"><input type="time" class="tl-time" aria-label="時間" step="300" value="${esc(step.time||'')}"></div><input class="tl-location" placeholder="場所" aria-label="場所" value="${esc(step.location||'')}"><button type="button" class="move-step move-up" title="上へ移動" aria-label="上へ移動">↑</button><button type="button" class="move-step move-down" title="下へ移動" aria-label="下へ移動">↓</button><button type="button" class="remove-step" title="削除">×</button></div><div class="map-actions" style="margin-bottom:6px"><button type="button" class="btn ghost tl-map-btn" style="flex:1;font-size:12px;padding:8px">🗺️ 地図を見る</button><button type="button" class="btn ghost tl-route-btn" style="flex:1;font-size:12px;padding:8px">🚗 ルート</button></div><select class="tl-type ${step.type?'has-value':''}" aria-label="撮影区分"><option value="">撮影区分</option>${SHOOT_TYPES.map(t=>`<option value="${esc(t)}" ${step.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select><input class="tl-content" placeholder="撮影内容" value="${esc(step.content||'')}">`;row.querySelector('.tl-time').addEventListener('change',e=>e.target.closest('.time-field').classList.toggle('has-value',!!e.target.value));row.querySelector('.move-up').onclick=()=>{const prev=row.previousElementSibling;if(prev)row.parentNode.insertBefore(row,prev)};row.querySelector('.move-down').onclick=()=>{const next=row.nextElementSibling;if(next)row.parentNode.insertBefore(next,row)};row.querySelector('.remove-step').onclick=()=>{row.remove();if(!document.querySelector('#timelineEditor .timeline-row'))addTimelineRow()};row.querySelector('.tl-type').addEventListener('change',e=>e.target.classList.toggle('has-value',!!e.target.value));row.querySelector('.tl-map-btn').addEventListener('click',()=>{const loc=row.querySelector('.tl-location').value.trim();if(!loc){alert('場所を入力してください。');return}window.open(mapHref(loc),'_blank','noopener')});row.querySelector('.tl-route-btn').addEventListener('click',()=>{const loc=row.querySelector('.tl-location').value.trim();if(!loc){alert('場所を入力してください。');return}window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(loc)+'&travelmode=driving','_blank','noopener')});$('timelineEditor').appendChild(row)}
 function setTimeline(steps=[]){$('timelineEditor').innerHTML='';(steps.length?steps:[{}]).forEach(addTimelineRow)}
 async function saveItem(data){
   const exists=items.some(x=>x.id===data.id);
@@ -921,8 +925,10 @@ async function saveElectionSettings(){
  if(!related.length)return;
  if(stopped&&!date){alert('先に選挙告示日を入力してください。');return}
  const existing=related.map(x=>x.adsStoppedAt).filter(Boolean).sort().pop()||'';
- const stoppedAt=stopped?(existing||new Date().toISOString()):'';
- const stoppedBy=stopped?(existing?(related.find(x=>x.adsStoppedAt===existing)?.adsStoppedBy||getLoginUser()):getLoginUser()):'';
+ const oldDate=electionInfo(name).date;const dateChanged=oldDate!==date;
+ if(dateChanged&&existing&&stopped&&!confirm('告示日が変更されています。以前の停止確認を解除します。新しい告示日について停止を確認してから、再度チェックしてください。'))return;
+ const stoppedAt=dateChanged?'':stopped?(existing||new Date().toISOString()):'';
+ const stoppedBy=dateChanged?'':stopped?(existing?(related.find(x=>x.adsStoppedAt===existing)?.adsStoppedBy||getLoginUser()):getLoginUser()):'';
  if(!stopped&&existing&&!confirm('広告停止確認を取り消しますか？'))return;
  const btn=$('saveElectionSettings');btn.disabled=true;
  try{
@@ -931,7 +937,7 @@ async function saveElectionSettings(){
    const r=await fetch(API+'?id=eq.'+encodeURIComponent(x.id),{method:'PATCH',headers:{...HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({notes})});
    if(!r.ok)throw new Error(await r.text());
   }
-  closeSheet($('progressChangeSheet'));await loadItems();
+  closeSheet($('progressChangeSheet'));await loadItems();if(dateChanged&&stopped)alert('告示日を変更したため、広告停止確認を未確認に戻しました。');
  }catch(e){alert('告示日・広告停止状況の保存に失敗しました。\n'+(e.message||e))}finally{btn.disabled=false}
 }
 function renderProgress(){
@@ -1076,8 +1082,24 @@ window.openSubjectProgress=openSubjectProgress;
 function renderAll(){renderStats();renderPhotographerFilter();renderEditorFilter();renderCalendar();renderDaily();renderProgress()}
 
 /* ---------- form ---------- */
-function clearForm(){['id','date','time','project','meetingPlace','owner','editor','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl'].forEach(k=>$(k).value='');$('status').value='撮影日程調整中';$('federation').value='';$('branch').value='';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');locationPicker.setSelection('');$('saveBtn').textContent='登録する';$('saveTopBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';
+function clearForm(){['formElectionDate','id','date','time','project','meetingPlace','owner','editor','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl'].forEach(k=>$(k).value='');$('status').value='撮影日程調整中';$('federation').value='';$('branch').value='';setTimeline([]);subjectPicker.setSelection('');participantsPicker.setSelection('');locationPicker.setSelection('');$('saveBtn').textContent='登録する';$('saveTopBtn').textContent='登録する';$('formTitle').textContent='撮影予定を登録';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='none';updateFormElectionDeadline();
  const u=getLoginUser(); if(u&&!$('owner').value)$('owner').value=u;
+}
+function updateFormElectionDeadline(){
+ const date=$('formElectionDate').value;
+ if(!date){$('formElectionDeadline').textContent='告示日を設定すると、前日の23:00がGoogle広告停止期限になります。';return}
+ const d=new Date(date+'T00:00:00');d.setDate(d.getDate()-1);
+ $('formElectionDeadline').textContent='Google広告停止期限：'+fmtDateJp(fmtDate(d))+' 23:00';
+}
+$('formElectionDate').addEventListener('change',updateFormElectionDeadline);
+async function saveSubjectElectionDates(names,date,stoppedAt='',stoppedBy='',excludeId=''){
+ const targets=items.filter(x=>x.id!==excludeId&&names.some(n=>subjectNamesForItem(x).includes(n)));
+ const errors=[];
+ for(const x of targets){
+  const notes=packNotes(x.notes,x.chouseisanUrl,x.federation,x.finalStatus,x.subjectOrder,x.branch,date,stoppedAt,stoppedBy);
+  try{const r=await fetch(API+'?id=eq.'+encodeURIComponent(x.id),{method:'PATCH',headers:{...HEADERS,'Prefer':'return=representation'},body:JSON.stringify({notes})});if(!r.ok)throw new Error(await r.text());if(!(await r.json()).length)throw new Error('更新対象がありません')}catch(e){errors.push((x.project||x.id)+': '+(e.message||e))}
+ }
+ if(errors.length)throw new Error('一部の関連予定を更新できませんでした。再読み込み後に確認してください。\n'+errors.join('\n'));
 }
 $('saveTopBtn').addEventListener('click',()=>$('form').requestSubmit());
 // Enterキーでフォームが意図せず送信されないようにする。
@@ -1087,7 +1109,15 @@ $('form').addEventListener('keydown',e=>{
   if(e.target.closest('textarea'))return;
   e.preventDefault();
 });
-$('form').addEventListener('submit',async e=>{e.preventDefault();subjectPicker.commitPending();participantsPicker.commitPending();locationPicker.commitPending();if(!$('subject').value.trim()){alert('撮影対象者を選択してください。');$('subjectInput').focus();return}const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:'',scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim(),chouseisanUrl:$('chouseisanUrl').value.trim(),federation:$('federation').value,branch:$('branch').value};try{await saveItem(data);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
+$('form').addEventListener('submit',async e=>{e.preventDefault();subjectPicker.commitPending();participantsPicker.commitPending();locationPicker.commitPending();if(!$('subject').value.trim()){alert('撮影対象者を選択してください。');$('subjectInput').focus();return}const data={id:$('id').value||crypto.randomUUID(),date:$('date').value,time:$('time').value,project:$('project').value.trim(),subject:$('subject').value.trim(),location:$('location').value.trim(),meetingPlace:$('meetingPlace').value.trim(),participants:$('participants').value.trim(),owner:$('owner').value.trim(),editor:$('editor').value.trim(),status:$('status').value,gear:'',scenario:$('scenario').value.trim(),timeline:timelineRows(),notes:$('notes').value.trim(),storageLink:$('storageLink').value.trim(),meetingDate:$('meetingDate').value,meetingTime:$('meetingTime').value,meetingUrl:$('meetingUrl').value.trim(),publishedUrl:$('publishedUrl').value.trim(),chouseisanUrl:$('chouseisanUrl').value.trim(),federation:$('federation').value,branch:$('branch').value};
+ const names=subjectNamesForItem(data),noticeDate=$('formElectionDate').value;
+ const prior=names.map(n=>electionInfo(n)).filter(v=>v.date);
+ const changed=prior.some(v=>v.date!==noticeDate);
+ if(changed&&prior.some(v=>v.stopped)&&!confirm('告示日が変更されました。以前の「広告停止確認済み」を取り消して、未確認に戻します。続けますか？'))return;
+ data.electionDate=noticeDate;
+ if(changed){data.adsStoppedAt='';data.adsStoppedBy=''}
+ else if(prior.length){data.adsStoppedAt=prior[0].stopped;data.adsStoppedBy=prior[0].stoppedBy}
+ try{await saveItem(data);await saveSubjectElectionDates(names,noticeDate,data.adsStoppedAt||'',data.adsStoppedBy||'',data.id);await loadItems();clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('保存に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
 function viewSchedule(id){
  const x=items.find(v=>v.id===id);if(!x)return;
  const val=v=>(v!==undefined&&v!==null&&String(v).trim())?esc(String(v)):'<span class="small">未設定</span>';
@@ -1243,7 +1273,7 @@ async function exportShareImage(){
 }
 $('exportShareImage').addEventListener('click',exportShareImage);
 
-function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','meetingPlace','owner','editor','status','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl','federation','branch'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');locationPicker.setSelection(x.location||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('saveTopBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';openSheet($('formSheet'))}
+function editItem(id){const x=items.find(v=>v.id===id);if(!x)return;['id','date','time','project','meetingPlace','owner','editor','status','scenario','notes','storageLink','meetingDate','meetingTime','meetingUrl','publishedUrl','chouseisanUrl','federation','branch'].forEach(k=>{if($(k))$(k).value=x[k]||''});subjectPicker.setSelection(x.subject||'');participantsPicker.setSelection(x.participants||'');locationPicker.setSelection(x.location||'');setTimeline(x.timeline||[]);$('saveBtn').textContent='更新する';$('saveTopBtn').textContent='更新する';$('formTitle').textContent='撮影予定を編集';$('meetingMapPreview').style.display='none';$('deleteBtn').style.display='block';$('formElectionDate').value=electionInfo(subjectNamesForItem(x)[0]||'').date||x.electionDate||'';updateFormElectionDeadline();openSheet($('formSheet'))}
 async function removeItem(id){if(confirm('この撮影予定を削除しますか？')){try{await deleteItem(id)}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}}}
 $('deleteBtn').addEventListener('click',async()=>{const id=$('id').value;if(!id)return;if(!confirm('この撮影予定を削除しますか？この操作は取り消せません。'))return;try{await deleteItem(id);clearForm();closeSheet($('formSheet'))}catch(err){console.error(err);alert('削除に失敗しました。\n\n【詳細】\n'+(err.message||err))}});
 window.editItem=editItem;window.removeItem=removeItem;
